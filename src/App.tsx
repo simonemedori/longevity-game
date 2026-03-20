@@ -498,7 +498,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       }
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const fetchWithRetry = async (retries = 5, delay = 1000) => {
       for (let i = 0; i < retries; i++) {
