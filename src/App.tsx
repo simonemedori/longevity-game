@@ -27,7 +27,7 @@ const firebaseConfig = {
 // ==========================================
 // 2. INCOLLA QUI LA TUA CHIAVE GEMINI AI
 // ==========================================
-const GEMINI_API_KEY = "AIzaSyBoLWrBOuTz8x2DioOA4Tq-VPV7bjTc6Fw";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
