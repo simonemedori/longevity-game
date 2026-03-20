@@ -15,13 +15,24 @@ import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc
 //  appId: "INCOLLA_QUI_APP_ID"
 //};
 // Your web app's Firebase configuration
+// const firebaseConfig = {
+//   apiKey: "AIzaSyAH4WbNS8m-xUuRFy4kYC4ckiey46OZLuY",
+//   authDomain: "longevity-game.firebaseapp.com",
+//   projectId: "longevity-game",
+//   storageBucket: "longevity-game.firebasestorage.app",
+//   messagingSenderId: "273748011729",
+//   appId: "1:273748011729:web:79028e4e4972cca4cf33f0"
+// };
+// ==========================================
+// 1. CONFIGURAZIONE FIREBASE (Variabili d'ambiente)
+// ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAH4WbNS8m-xUuRFy4kYC4ckiey46OZLuY",
-  authDomain: "longevity-game.firebaseapp.com",
-  projectId: "longevity-game",
-  storageBucket: "longevity-game.firebasestorage.app",
-  messagingSenderId: "273748011729",
-  appId: "1:273748011729:web:79028e4e4972cca4cf33f0"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // ==========================================
