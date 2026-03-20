@@ -25,3 +25,30 @@ Se vuoi scaricare il progetto ed eseguirlo sul tuo computer:
 1. **Clona il repository e installa le dipendenze:**
    ```bash
    npm install
+
+2. **Configura le Variabili d'Ambiente:**
+Crea un file .env nella cartella principale del progetto e inserisci la tua chiave API di Google AI Studio.
+(Nota: per motivi di sicurezza, questo file non viene mai caricato su GitHub).
+VITE_GEMINI_API_KEY=inserisci_qui_la_tua_chiave_AIza...
+
+3. **Avvia il server di sviluppo:**
+   ```bash
+   npm run dev
+
+## 🚀 Pubblicazione (Deploy su Netlify)
+Per pubblicare l'app in produzione:
+
+1. Collega il repository GitHub a Netlify.
+
+2. In Netlify, vai in Site configuration -> Environment variables e aggiungi:
+
+  - **Key**: `VITE_GEMINI_API_KEY`
+  - **Value**: `[La tua chiave di Google AI Studio]`
+
+3. Imposta il comando di build su vite build (o `CI= vite build` se ci sono warning di Tailwind).
+
+4. Avvia il Deploy!
+
+## 🔐 Sicurezza
+Le credenziali di Firebase nel file `App.tsx` sono pubbliche in quanto gestite tramite permessi di sicurezza direttamente dalle regole di Firestore (Firebase Security Rules).
+La chiave di Google Gemini, invece, deve rimanere strettamente privata e gestita unicamente tramite variabili d'ambiente (import.meta.env).
