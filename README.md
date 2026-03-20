@@ -1,73 +1,27 @@
-# React + TypeScript + Vite
+# 🏛️ Longevity Game - Simulatore Finanziario IA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Longevity Game** è un'applicazione web interattiva creata per i consulenti finanziari (Crédit Agricole / Amundi). Permette di simulare scenari di investimento in tempo reale, dove squadre di consulenti allocano portafogli per diverse fasce d'età, affrontando imprevisti macroeconomici generati da un "Game Master" guidato dall'Intelligenza Artificiale.
 
-Currently, two official plugins are available:
+## ✨ Funzionalità Principali
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* **Multiplayer in Tempo Reale:** Creazione di "Aule" virtuali (es. MILANO, ROMA) dove i partecipanti si collegano tramite codice o QR Code.
+* **Allocazione Portafogli:** 4 fasce d'età (0-25, 25-50, 50-70, 70+ anni) con prodotti finanziari reali, metriche tecniche e vincolo del 100%.
+* **Game Master IA (Google Gemini 2.5):** L'intelligenza artificiale agisce come un macroeconomista spietato. Valuta i portafogli confermati, inventa shock di mercato e assegna punteggi e feedback tecnici basati sulle scelte dei consulenti.
+* **Regia Istruttore (Admin Loby):** Pannello riservato per gestire le aule, importare configurazioni JSON personalizzate, espellere team, forzare consegne ed esportare le classifiche.
+* **Simulatore Mobile Integrato:** Visualizzazione affiancata per testare l'interfaccia mobile (lato partecipante) direttamente dallo schermo del PC.
 
-## React Compiler
+## 🛠️ Stack Tecnologico
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Frontend:** React, TypeScript, Vite
+* **Styling:** Tailwind CSS
+* **Database & Auth:** Firebase (Firestore per il real-time sync, Authentication anonima)
+* **Intelligenza Artificiale:** API REST di Google Gemini (Modello: `gemini-2.5-flash`)
+* **Hosting raccomandato:** Netlify
 
-## Expanding the ESLint configuration
+## ⚙️ Configurazione e Installazione (Sviluppo Locale)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Se vuoi scaricare il progetto ed eseguirlo sul tuo computer:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clona il repository e installa le dipendenze:**
+   ```bash
+   npm install
