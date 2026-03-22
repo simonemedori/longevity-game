@@ -1,42 +1,46 @@
 // netlify/functions/generate-event.js
+const https = require('https');
+
 exports.handler = async (event, context) => {
-  // Solo chiamate POST autorizzate
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  // Recupera la chiave dalle variabili di ambiente di Netlify (SENZA VITE_)
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  
   if (!GEMINI_API_KEY) {
     return { 
       statusCode: 500, 
-      body: JSON.stringify({ error: "Chiave API GEMINI_API_KEY non configurata su Netlify (Environment Variables)" }) 
+      body: JSON.stringify({ error: "Chiave API GEMINI_API_KEY mancante nelle Environment Variables di Netlify" }) 
     };
   }
 
-  try {
-    const body = JSON.parse(event.body);
-    // Usiamo il modello flash 2.0 come nel tuo codice originale
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const body = event.body;
 
-    const response = await fetch(url, {
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      headers: { 'Content-Type': 'application/json' }
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', chunk => responseBody += chunk);
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode,
+          headers: { "Content-Type": "application/json" },
+          body: responseBody
+        });
+      });
     });
 
-    const data = await response.json();
-    
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Errore server Netlify", details: error.message })
-    };
-  }
+    req.on('error', (error) => {
+      resolve({
+        statusCode: 500,
+        body: JSON.stringify({ error: "Errore chiamata Gemini", details: error.message })
+      });
+    });
+
+    req.write(body);
+    req.end();
+  });
 };
