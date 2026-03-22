@@ -173,6 +173,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiHint, setAiHint] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
@@ -572,25 +573,28 @@ const LongevityGame = ({ isSimulator = false }) => {
     setIsGeneratingAI(true);
     showMessage("L'Esperto sta analizzando i mercati...", "info");
 
-    const systemPrompt = `Sei il Game Master del "Longevity Game" per consulenti finanziari Crédit Agricole/Amundi.
-La tua identità: Sei un Macroeconomista e Gestore Istituzionale di Portafogli con oltre 20 anni di esperienza sui mercati finanziari globali.
-Il tuo tono deve essere teatrale, pungente, ironico ma TECNICAMENTE E CLINICAMENTE INATTACCABILE. Hai visto crisi, bolle e crolli, non perdoni gli errori da principianti.
+    const systemPrompt = `Sei il Game Master del "Longevity Game" per consulenti Crédit Agricole/Amundi.
+La tua identità: Chief Investment Strategist con 25 anni sui mercati globali.
+Leggi ogni evento — economico o di vita — attraverso la lente dell'impatto finanziario sul portafoglio del cliente.
+Tono: autorevole, teatrale, ironico. Premi le scelte tecnicamente solide, demolisci quelle ingenue. Una frecciata ben piazzata vale più di un paragrafo.
 
-Il tuo compito è:
-1. Inventare uno scenario (shock macroeconomico, evento geopolitico, o un evento di vita del cliente).
-2. Valutare con precisione chirurgica le scelte di Asset Allocation dei vari team.
-Hai a disposizione nei dati JSON inviati non solo le percentuali (pesoPercentuale), ma le vere metriche tecniche dei prodotti scelti (duration, YTM, esposizione settoriale, volatilità, rating, vantaggi fiscali). DEVI usare questi dati tecnici per giustificare i tuoi voti!
+EVENTI: scegli liberamente tra macroeconomici (tassi, inflazione, recessione, rally, spread, geopolitica) e di vita (eventi familiari, lavorativi, sanitari, successori) — sia positivi che negativi in egual misura.
+Gli eventi macroeconomici si applicano identici a tutti i team.
+Gli eventi di vita personale, se pertinenti, possono essere adattati alla fascia d'età (es. "nascita figlio" per 25-50, "nascita nipote" per 70+).
+In ogni caso, valuta sempre l'impatto finanziario sul portafoglio del cliente.
 
-REGOLE D'ORO:
-- Usa terminologia finanziaria avanzata (curva dei tassi, spread creditizio, equity risk premium, drawdown, sequence of returns risk).
-- Se un team over 70 è troppo esposto su duration lunghe in caso di rialzo dei tassi, massacrali per aver esposto il cliente a perdite in conto capitale proprio quando gli serve reddito liquido.
-- Se crolla l'azionario, loda il team 0-25 anni se fa PAC (comprano a sconto, la volatilità è loro alleata matematica).
-- Penalizza severamente l'over 70 se non ha lasciato un "Floor" adeguato (Liquidità o Amundi Div Short-Term) per far fronte a spese impreviste senza smontare le azioni ai minimi.
-- Valorizza l'uso corretto dello "Scudo Fiscale" (PIR o SecondaPensione).
+VALUTAZIONE: usa le metriche tecniche fornite per ciascun prodotto (disponibili nel JSON) per giustificare ogni voto con precisione chirurgica.
+Premia chi era posizionato per cogliere l'opportunità o assorbire lo shock. Punteggio da 1 a 10.
 
-Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team in base all'impatto matematico e logico dello shock sui loro portafogli specifici.`;
+STILE — TASSATIVO:
+- Scenario: massimo 3 righe. Titolo ad effetto, descrizione immediata
+- Valutazione per team: massimo 2-3 righe. Voto, motivazione tecnica, una battuta finale tagliente
+- Sii pungente, non prolisso. Una frecciata ben piazzata vale più di un paragrafo`;
 
-    const userQuery = `Ecco i portafogli attuali delle squadre in gara, completi di metriche finanziarie dei prodotti scelti. Colpiscili con un evento macroeconomico inaspettato!\n\n${JSON.stringify(submittedTeams, null, 2)}`;
+    const hintClause = aiHint.trim()
+      ? `\n\nSuggerimento dell'istruttore (usalo come ispirazione per l'evento): "${aiHint.trim()}"`
+      : '';
+    const userQuery = `Ecco i portafogli delle squadre in gara, completi di metriche finanziarie per ciascun prodotto. Genera un evento e valuta i portafogli.${hintClause}\n\n${JSON.stringify(submittedTeams, null, 2)}`;
 
     const payload = {
       contents: [{ parts: [{ text: userQuery }] }],
@@ -654,7 +658,8 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         const parsedData = JSON.parse(textResponse);
         const newEvent = {
           ...parsedData,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          ...(aiHint.trim() && { hintUsed: aiHint.trim() })
         };
         
         const currentEvents = gameData.events || [];
@@ -668,6 +673,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         const docRef = gameDocRef(gameId);
         await updateDoc(docRef, updates);
         
+        setAiHint('');
         showMessage("Evento generato e punteggi aggiornati!", "success");
       }
     } catch (error) {
@@ -809,13 +815,13 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
          </h3>
          <div className="flex flex-wrap gap-4">
            {rankedTeams.map((t, idx) => (
-             <div key={t.age} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${idx === 0 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
-                <span className={`text-xl font-black ${idx === 0 ? 'text-amber-500' : 'text-slate-400'}`}>#{idx + 1}</span>
+             <div key={t.age} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${idx === 0 ? 'bg-[#FCE5CC] border-[#F9CB99]' : 'bg-slate-50 border-slate-200'}`}>
+                <span className={`text-xl font-black ${idx === 0 ? 'text-[#F07D00]' : 'text-slate-400'}`}>#{idx + 1}</span>
                 <div>
                    <div className="font-bold text-slate-800">{t.groupName}</div>
                    <div className="text-xs text-slate-500 font-bold">{t.age} anni</div>
                 </div>
-                <div className="ml-4 font-black text-emerald-600 text-xl">{t.totalScore || 0} pt</div>
+                <div className="ml-4 font-black text-[#39B2B6] text-xl">{t.totalScore || 0} pt</div>
              </div>
            ))}
          </div>
@@ -829,17 +835,17 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
 
     return (
       <div className="mt-8 space-y-6 pb-12">
-        <h3 className="text-2xl font-black text-indigo-800 flex items-center gap-2">
+        <h3 className="text-2xl font-black text-[#001C4B] flex items-center gap-2">
           <span>✨</span> Cronache del Game Master
         </h3>
         {events.map((ev, idx) => (
-          <div key={idx} className="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-indigo-100 animate-fade-in-up">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
-              <span className="bg-white/20 text-indigo-50 text-xs font-bold px-3 py-1 rounded-full mb-3 inline-block uppercase tracking-wider">
-                {new Date(ev.timestamp).toLocaleTimeString('it-IT')} - Imprevisto #{events.length - idx}
+          <div key={idx} className="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-[#CCD9EA] animate-fade-in-up">
+            <div className="bg-gradient-to-r from-[#004F9F] to-[#009EE0] p-6 text-white">
+              <span className="bg-white/20 text-[#EBF4FB] text-xs font-bold px-3 py-1 rounded-full mb-3 inline-block uppercase tracking-wider">
+                {new Date(ev.timestamp).toLocaleTimeString('it-IT')} - Imprevisto #{events.length - idx}{ev.hintUsed ? ' (su suggerimento)' : ''}
               </span>
               <h4 className="text-2xl font-black mb-2">{ev.scenarioTitle}</h4>
-              <p className="text-indigo-100 leading-relaxed font-medium text-sm md:text-base">{ev.scenarioDescription}</p>
+              <p className="text-[#CCD9EA] leading-relaxed font-medium text-base md:text-lg">{ev.scenarioDescription}</p>
             </div>
             <div className="p-6 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
               {ev.evaluations.map((evalItem, i) => {
@@ -847,17 +853,17 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                 const isBad = evalItem.score < 5;
                 return (
                   <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 w-2 h-full ${isGood ? 'bg-emerald-500' : isBad ? 'bg-rose-500' : 'bg-amber-400'}`}></div>
+                    <div className={`absolute top-0 left-0 w-2 h-full ${isGood ? 'bg-[#D8F0F1]0' : isBad ? 'bg-[#FAD5DE]0' : 'bg-[#F07D00]'}`}></div>
                     <div className="pl-3 flex justify-between items-start mb-2">
                       <div>
                         <h5 className="font-bold text-slate-800">{evalItem.teamName}</h5>
                         <span className="text-xs text-slate-500 font-bold">{evalItem.ageBracket} anni</span>
                       </div>
-                      <div className={`text-2xl font-black ${isGood ? 'text-emerald-500' : isBad ? 'text-rose-500' : 'text-amber-500'}`}>
+                      <div className={`text-2xl font-black ${isGood ? 'text-[#39B2B6]' : isBad ? 'text-[#E6325E]' : 'text-[#F07D00]'}`}>
                         +{evalItem.score} pt
                       </div>
                     </div>
-                    <p className="pl-3 text-sm text-slate-600 italic">"{evalItem.feedback}"</p>
+                    <p className="pl-3 text-base text-slate-600 italic">{evalItem.feedback}</p>
                   </div>
                 );
               })}
@@ -875,7 +881,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       
       {/* Toast Notification */}
       {notification.show && (
-        <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white transition-all transform animate-fade-in-down ${notification.type === 'error' ? 'bg-rose-500' : notification.type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
+        <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white transition-all transform animate-fade-in-down ${notification.type === 'error' ? 'bg-[#FAD5DE]0' : notification.type === 'success' ? 'bg-[#D8F0F1]0' : 'bg-[#004F9F]'}`}>
           {notification.message}
         </div>
       )}
@@ -885,7 +891,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         <>
           <button 
             onClick={() => setShowSimulator(!showSimulator)} 
-            className="fixed bottom-6 right-6 bg-indigo-600 text-white w-16 h-16 rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)] z-50 hover:bg-indigo-500 transition-transform transform hover:scale-110 flex items-center justify-center text-3xl border-2 border-indigo-400"
+            className="fixed bottom-6 right-6 bg-[#004F9F] text-white w-16 h-16 rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)] z-50 hover:bg-[#EBF4FB]0 transition-transform transform hover:scale-110 flex items-center justify-center text-3xl border-2 border-[#6693BF]"
             title="Simula Smartphone Consulente"
           >
             📱
@@ -915,7 +921,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         <div className="fixed inset-0 bg-slate-900 bg-opacity-70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
               <h2 className="text-2xl font-black text-slate-800 mb-4">
-                 {editingTeam.isNew ? 'Crea Squadra Manualmente' : 'Modifica Squadra'} <span className="text-teal-600">({editingTeam.ageBracket} anni)</span>
+                 {editingTeam.isNew ? 'Crea Squadra Manualmente' : 'Modifica Squadra'} <span className="text-[#004F9F]">({editingTeam.ageBracket} anni)</span>
               </h2>
               <div className="space-y-4">
                  <div>
@@ -924,7 +930,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                       type="text"
                       value={editingTeam.groupName}
                       onChange={e => setEditingTeam({...editingTeam, groupName: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 font-bold text-slate-800 focus:border-teal-500 outline-none"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 font-bold text-slate-800 focus:border-[#004F9F] outline-none"
                     />
                  </div>
                  <div className="space-y-2">
@@ -933,7 +939,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                        <div key={p.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                           <div className="min-w-0 pr-2">
                              <div className="text-sm font-bold text-slate-700 leading-tight truncate">{p.name}</div>
-                             <div className="text-[10px] font-semibold text-teal-600 mt-0.5 truncate">{p.desc}</div>
+                             <div className="text-[10px] font-semibold text-[#004F9F] mt-0.5 truncate">{p.desc}</div>
                           </div>
                           <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden w-24 flex-shrink-0">
                              <input
@@ -954,7 +960,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
               </div>
               <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
                  <button onClick={() => setEditingTeam(null)} className="px-5 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition-colors">Annulla</button>
-                 <button onClick={saveAdminEdit} className="px-5 py-3 bg-teal-600 text-white font-bold rounded-xl shadow-md hover:bg-teal-700 transition-colors">Salva e Conferma</button>
+                 <button onClick={saveAdminEdit} className="px-5 py-3 bg-[#004F9F] text-white font-bold rounded-xl shadow-md hover:bg-[#003063] transition-colors">Salva e Conferma</button>
               </div>
            </div>
         </div>
@@ -972,7 +978,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
             <button 
               onClick={handleAdminGoogleLogin}
               disabled={isLoggingIn}
-              className={`w-full flex items-center justify-center gap-3 border-2 p-4 rounded-xl mb-4 font-bold transition-all shadow-sm ${isLoggingIn ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-teal-500 text-slate-700 hover:shadow-md'}`}
+              className={`w-full flex items-center justify-center gap-3 border-2 p-4 rounded-xl mb-4 font-bold transition-all shadow-sm ${isLoggingIn ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-[#004F9F] text-slate-700 hover:shadow-md'}`}
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
               {isLoggingIn ? 'Accesso in corso...' : 'Accedi con Google'}
@@ -984,17 +990,17 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       )}
 
       {/* HEADER GLOBALE */}
-      <header className={`max-w-5xl w-full text-center bg-white rounded-3xl shadow-sm border-t-8 border-teal-600 relative ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
+      <header className={`max-w-5xl w-full text-center bg-white rounded-3xl shadow-sm border-t-8 border-[#004F9F] relative ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
         {isAdmin && !isSimulator && (
           <button 
             onClick={handleLogout}
-            className="absolute top-4 right-4 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+            className="absolute top-4 right-4 bg-slate-100 hover:bg-[#FAD5DE] text-slate-400 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
           >
             Esci 🚪
           </button>
         )}
         <h1 
-          className={`font-black text-teal-800 tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-teal-600'}`}
+          className={`font-black text-[#001C4B] tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-[#004F9F]'}`}
           onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView(VIEWS.ADMIN_LOBBY); } }}
           title={!isSimulator ? (isAdmin ? "Vai alla Lobby Admin" : "Clicca per Accesso Regia") : ""}
         >
@@ -1005,7 +1011,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       {/* VISTA 0: INSERIMENTO CODICE AULA */}
       {view === VIEWS.JOIN && user && (
          <main className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-fade-in-up p-8 text-center border border-slate-100">
-            <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-[#CCD9EA] text-[#004F9F] rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">🏢</span>
             </div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Entra in Aula</h2>
@@ -1013,7 +1019,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
             
             <input 
               type="text" 
-              className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-center text-xl font-black text-slate-800 tracking-wider uppercase focus:border-teal-500 outline-none transition-colors mb-6"
+              className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-center text-xl font-black text-slate-800 tracking-wider uppercase focus:border-[#004F9F] outline-none transition-colors mb-6"
               placeholder="CODICE AULA"
               value={joinCodeInput}
               onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
@@ -1032,7 +1038,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       {/* VISTA 1: SETUP GIOCATORE */}
       {view === VIEWS.SETUP && user && (
         <main className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-fade-in-up border border-slate-100">
-          <div className="bg-teal-600 text-white p-3 text-center font-bold tracking-widest text-xs">
+          <div className="bg-[#004F9F] text-white p-3 text-center font-bold tracking-widest text-xs">
             AULA: {gameId}
           </div>
           <div className="p-6 md:p-8">
@@ -1043,7 +1049,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                 <label className="block text-sm font-bold text-slate-600 mb-2">Nome del Team</label>
                 <input 
                   type="text" 
-                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-lg font-bold text-slate-800 focus:border-teal-500 outline-none"
+                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-lg font-bold text-slate-800 focus:border-[#004F9F] outline-none"
                   placeholder="es. Lupi di Wall Street"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
@@ -1066,13 +1072,13 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                           isOccupied 
                             ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                             : selectedAge === age 
-                              ? 'border-teal-600 bg-teal-50 text-teal-700 shadow-inner' 
-                              : 'border-slate-200 bg-white text-slate-500 hover:border-teal-300 hover:bg-slate-50'
+                              ? 'border-[#004F9F] bg-[#EBF4FB] text-[#003063] shadow-inner' 
+                              : 'border-slate-200 bg-white text-slate-500 hover:border-[#6693BF] hover:bg-slate-50'
                         }`}
                       >
                         <span className="text-sm">{age} anni</span>
                         {isOccupied && (
-                          <span className="text-[10px] font-bold text-rose-500 truncate w-full text-center">
+                          <span className="text-[10px] font-bold text-[#E6325E] truncate w-full text-center">
                             {occupyingTeam.groupName}
                           </span>
                         )}
@@ -1098,13 +1104,13 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         <main className="max-w-4xl w-full animate-fade-in-up">
           
           <div className="flex justify-between items-center mb-4 px-2">
-             <div className="bg-white px-3 py-1.5 rounded-full shadow-sm font-bold text-teal-700 border border-teal-100 flex items-center gap-2 text-sm">
-               <span className="text-[10px] bg-teal-600 text-white px-2 py-0.5 rounded">AULA {gameId}</span>
+             <div className="bg-white px-3 py-1.5 rounded-full shadow-sm font-bold text-[#003063] border border-[#CCD9EA] flex items-center gap-2 text-sm">
+               <span className="text-[10px] bg-[#004F9F] text-white px-2 py-0.5 rounded">AULA {gameId}</span>
                <span>👤</span> <span className="truncate max-w-[100px] md:max-w-[150px]">{groupName}</span>
              </div>
              
              {/* Punteggio Live Squadra */}
-             <div className="flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 px-4 py-1.5 rounded-full shadow-sm font-black text-sm">
+             <div className="flex items-center gap-2 bg-[#FCE5CC] text-[#C06300] border border-[#F9CB99] px-4 py-1.5 rounded-full shadow-sm font-black text-sm">
                 <span>🏆</span> {gameData?.teams?.[selectedAge]?.totalScore || 0} pt
              </div>
           </div>
@@ -1121,13 +1127,13 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                     onClick={() => setActiveTab(tab)}
                     className={`flex-1 min-w-[100px] py-3 px-2 text-xs md:text-sm font-bold transition-all border-r border-slate-200 flex flex-col items-center justify-center gap-1
                       ${activeTab === tab 
-                        ? 'bg-white text-teal-700 border-b-4 border-b-teal-600 shadow-sm' 
+                        ? 'bg-white text-[#003063] border-b-4 border-b-teal-600 shadow-sm' 
                         : 'text-slate-500 hover:bg-slate-200'}`}
                   >
                     <span className="flex items-center gap-1">
                       {tab}
                       {tabTeam?.status === STATUS.SUBMITTED && <span title="Completato">✔️</span>}
-                      {tabTeam?.status === STATUS.DRAFT && !isMyTab && <span title="In lavorazione" className="animate-pulse text-amber-500">⏳</span>}
+                      {tabTeam?.status === STATUS.DRAFT && !isMyTab && <span title="In lavorazione" className="animate-pulse text-[#F07D00]">⏳</span>}
                     </span>
                     {!isMyTab && tabTeam && (
                        <span className="text-[9px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full truncate max-w-[80px]">
@@ -1152,19 +1158,19 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
 
               return (
                 <div>
-                  <div className={`p-4 md:p-6 border-b ${isMyTab ? 'bg-slate-50 border-slate-100' : 'bg-indigo-50 border-indigo-100'}`}>
+                  <div className={`p-4 md:p-6 border-b ${isMyTab ? 'bg-slate-50 border-slate-100' : 'bg-[#EBF4FB] border-[#CCD9EA]'}`}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                       <div>
                         <h2 className="text-xl md:text-2xl font-black text-slate-800">{activePortfolios[activeTab].title}</h2>
-                        <p className={`font-bold mt-1 text-xs md:text-sm flex items-center gap-1 ${isMyTab ? 'text-teal-700' : 'text-indigo-700'}`}>
+                        <p className={`font-bold mt-1 text-xs md:text-sm flex items-center gap-1 ${isMyTab ? 'text-[#003063]' : 'text-[#003063]'}`}>
                           {activePortfolios[activeTab].focus}
                         </p>
                       </div>
                       {!isMyTab && (
-                        <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-2 shadow-md w-max">
+                        <div className="bg-[#004F9F] text-white px-3 py-1.5 rounded-lg font-bold flex items-center gap-2 shadow-md w-max">
                           <span className="text-lg">👀</span> 
                           <div>
-                            <div className="text-[10px] text-indigo-200 leading-tight">Spia:</div>
+                            <div className="text-[10px] text-[#99B5D5] leading-tight">Spia:</div>
                             <div className="leading-tight text-sm">{spiedTeam ? spiedTeam.groupName : 'Nessuno'}</div>
                           </div>
                         </div>
@@ -1182,20 +1188,20 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
 
                       return (
                         <div key={prod.id} className={`flex items-center p-3 rounded-xl border-2 transition-all ${
-                          !isMyTab ? 'bg-white border-indigo-100 opacity-90' : 
-                          isDisabled ? 'bg-slate-100 border-slate-200' : 'bg-white border-slate-100 hover:border-teal-200 shadow-sm'
+                          !isMyTab ? 'bg-white border-[#CCD9EA] opacity-90' : 
+                          isDisabled ? 'bg-slate-100 border-slate-200' : 'bg-white border-slate-100 hover:border-[#99B5D5] shadow-sm'
                         }`}>
                           <div className="flex items-center flex-1 mr-2 min-w-0">
                             <span className="text-2xl md:text-3xl mr-3 flex-shrink-0">{prod.icon}</span>
                             <div className="flex flex-col min-w-0">
                               <h3 className="font-bold text-sm md:text-base text-slate-800 leading-tight truncate">{prod.name}</h3>
-                              <p className="text-[10px] md:text-xs font-semibold text-teal-600 leading-tight mt-0.5 truncate">{prod.desc}</p>
+                              <p className="text-[10px] md:text-xs font-semibold text-[#004F9F] leading-tight mt-0.5 truncate">{prod.desc}</p>
                             </div>
                           </div>
                           
                           <div className={`flex items-center border-2 rounded-lg overflow-hidden transition-all w-20 md:w-28 flex-shrink-0 ${
-                            !isMyTab ? 'bg-indigo-50 border-indigo-200' :
-                            isDisabled ? 'bg-slate-200 border-slate-300' : 'bg-slate-50 border-slate-200 focus-within:border-teal-500'
+                            !isMyTab ? 'bg-[#EBF4FB] border-[#99B5D5]' :
+                            isDisabled ? 'bg-slate-200 border-slate-300' : 'bg-slate-50 border-slate-200 focus-within:border-[#004F9F]'
                           }`}>
                             <input
                               type="text"
@@ -1205,12 +1211,12 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                               onChange={(e) => handleInputChange(prod.id, e.target.value)}
                               disabled={isDisabled}
                               className={`w-full text-center text-lg md:text-xl font-black p-2 outline-none bg-transparent ${
-                                !isMyTab ? 'text-indigo-800 cursor-not-allowed' :
+                                !isMyTab ? 'text-[#001C4B] cursor-not-allowed' :
                                 isDisabled ? 'text-slate-500 cursor-not-allowed' : 'text-slate-800'
                               }`}
                             />
                             <span className={`px-2 font-black text-sm h-full flex items-center border-l-2 ${
-                               !isMyTab ? 'border-indigo-200 text-indigo-400' :
+                               !isMyTab ? 'border-[#99B5D5] text-[#6693BF]' :
                                isDisabled ? 'border-slate-300 text-slate-400' : 'border-slate-200 text-slate-400'
                             }`}>%</span>
                           </div>
@@ -1220,11 +1226,11 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                   </div>
 
                   {isMyTab && (
-                    <div className={`p-5 transition-colors duration-500 ${isMyTeamLocked ? 'bg-emerald-50' : isPerfect ? 'bg-teal-50' : 'bg-white border-t border-slate-100'}`}>
+                    <div className={`p-5 transition-colors duration-500 ${isMyTeamLocked ? 'bg-[#D8F0F1]' : isPerfect ? 'bg-[#EBF4FB]' : 'bg-white border-t border-slate-100'}`}>
                       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="text-center md:text-left">
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Il tuo Totale</p>
-                          <h3 className={`text-3xl font-black ${isMyTeamLocked ? 'text-emerald-600' : isPerfect ? 'text-teal-600' : currentTotal > 100 ? 'text-rose-500' : 'text-slate-800'}`}>
+                          <h3 className={`text-3xl font-black ${isMyTeamLocked ? 'text-[#39B2B6]' : isPerfect ? 'text-[#004F9F]' : currentTotal > 100 ? 'text-[#E6325E]' : 'text-slate-800'}`}>
                             {currentTotal}%
                           </h3>
                         </div>
@@ -1235,7 +1241,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                             disabled={!isPerfect}
                             className={`w-full md:w-auto px-6 py-3 rounded-xl font-black text-base shadow-lg transition-all transform ${
                               isPerfect 
-                                ? 'bg-teal-600 hover:bg-teal-500 text-white hover:-translate-y-1' 
+                                ? 'bg-[#004F9F] hover:bg-[#EBF4FB]0 text-white hover:-translate-y-1' 
                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                             }`}
                           >
@@ -1243,7 +1249,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                           </button>
                         )}
                         {isMyTeamLocked && (
-                          <div className="text-emerald-700 font-bold text-center md:text-right leading-tight">
+                          <div className="text-[#2A8A8D] font-bold text-center md:text-right leading-tight">
                             <span className="block text-xl mb-1">✅</span>
                             Consegna Registrata.
                           </div>
@@ -1304,13 +1310,13 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                   placeholder="Nome Aula (es. ROMA)"
                   value={roomNameInput}
                   onChange={(e) => setRoomNameInput(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-xl p-3 text-white placeholder-slate-400 focus:border-teal-400 outline-none font-bold text-center uppercase"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-xl p-3 text-white placeholder-slate-400 focus:border-[#6693BF] outline-none font-bold text-center uppercase"
                   maxLength="15"
                 />
                 <button 
                   onClick={createNewGameRoom} 
                   disabled={!roomNameInput.trim()}
-                  className={`px-8 py-3 rounded-xl font-black shadow-lg transition-transform transform ${roomNameInput.trim() ? 'bg-teal-500 hover:bg-teal-400 text-white hover:-translate-y-1' : 'bg-slate-600 text-slate-400 cursor-not-allowed'}`}
+                  className={`px-8 py-3 rounded-xl font-black shadow-lg transition-transform transform ${roomNameInput.trim() ? 'bg-[#EBF4FB]0 hover:bg-[#6693BF] text-white hover:-translate-y-1' : 'bg-slate-600 text-slate-400 cursor-not-allowed'}`}
                 >
                   + CREA AULA
                 </button>
@@ -1330,7 +1336,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                       <h3 className="text-2xl font-black text-slate-800 tracking-widest">{game.id}</h3>
                       <p className="text-xs font-bold text-slate-400 mt-1 uppercase">Creata: {date}</p>
                     </div>
-                    <span className="bg-teal-50 text-teal-700 font-black px-3 py-1 rounded-lg text-sm border border-teal-100">
+                    <span className="bg-[#EBF4FB] text-[#003063] font-black px-3 py-1 rounded-lg text-sm border border-[#CCD9EA]">
                       {activeTeamsCount}/4 Gruppi
                     </span>
                   </div>
@@ -1338,13 +1344,13 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                   <div className="flex gap-2 mt-6">
                     <button 
                       onClick={() => { setGameId(game.id); setView(VIEWS.ADMIN_ROOM); }}
-                      className="flex-1 bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                      className="flex-1 bg-slate-100 hover:bg-[#004F9F] hover:text-white text-slate-700 font-bold py-3 rounded-xl transition-colors"
                     >
                       Entra / Proietta
                     </button>
                     <button 
                       onClick={() => deleteGameRoom(game.id)}
-                      className="w-14 bg-white border border-rose-200 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl font-bold transition-colors flex items-center justify-center"
+                      className="w-14 bg-white border border-[#F5ABBD] text-[#E6325E] hover:bg-[#FAD5DE]0 hover:text-white rounded-xl font-bold transition-colors flex items-center justify-center"
                     >
                       🗑️
                     </button>
@@ -1364,7 +1370,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
              <span>←</span> Torna alla Lobby
           </button>
 
-          <div className="bg-slate-800 text-white p-6 md:p-8 rounded-3xl shadow-2xl mb-8 border-4 border-teal-500 flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center">
+          <div className="bg-slate-800 text-white p-6 md:p-8 rounded-3xl shadow-2xl mb-8 border-4 border-[#004F9F] flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center">
             
             {/* QR CODE QUADRATO E FORZATO */}
             <div className="bg-white p-3 rounded-2xl shadow-inner hidden md:flex items-center justify-center border-2 border-slate-700 w-48 h-48 lg:w-56 lg:h-56 flex-shrink-0">
@@ -1378,24 +1384,48 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
             
             <div className="flex-1 flex flex-col justify-center h-full min-w-0 w-full overflow-hidden">
               <div className="mb-4 w-full">
-                <h2 className="text-3xl lg:text-4xl font-black mb-2 truncate">Regia Live | Aula: <span className="text-teal-400 tracking-widest">{gameId}</span></h2>
+                <h2 className="text-3xl lg:text-4xl font-black mb-2 truncate">Regia Live | Aula: <span className="text-[#6693BF] tracking-widest">{gameId}</span></h2>
                 <p className="text-slate-300 font-medium text-base lg:text-lg mb-2">
                   Inquadra il QR Code oppure vai su questo link:
                 </p>
                 {/* Contenitore URL blindato con inline styles per garantire il wrapping */}
                 <div className="w-full max-w-full overflow-hidden bg-slate-900 px-4 py-3 rounded-lg border border-slate-700 mb-4">
-                  <div className="font-mono text-teal-300 text-xs sm:text-sm select-all" style={{ wordBreak: 'break-all', overflowWrap: 'break-word', whiteSpace: 'normal' }}>
+                  <div className="font-mono text-[#99B5D5] text-xs sm:text-sm select-all" style={{ wordBreak: 'break-all', overflowWrap: 'break-word', whiteSpace: 'normal' }}>
                     {window.location.origin}{window.location.pathname}?room={gameId}
                   </div>
                 </div>
               </div>
               
               {/* Bottoni Azione Sotto al Link */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button 
-                  onClick={generateAIEvent} 
+              <div className="mb-3">
+                {(() => {
+                  const activeBrackets = Object.keys(activePortfolios).filter(b => gameData?.teams?.[b]);
+                  const eventCount = gameData?.events?.length || 0;
+                  const hintTeam = activeBrackets.length > 0
+                    ? activeBrackets[eventCount % activeBrackets.length]
+                    : null;
+                  return hintTeam ? (
+                    <p className="mb-2">
+                      <span className="bg-[#F07D00] text-white text-xs font-bold px-3 py-1 rounded-full">
+                        🎯 Turno della fascia {hintTeam} anni — chiedi a loro l'hint!
+                      </span>
+                    </p>
+                  ) : null;
+                })()}
+                <textarea
+                  value={aiHint}
+                  onChange={(e) => setAiHint(e.target.value)}
                   disabled={isGeneratingAI}
-                  className={`px-6 py-3 rounded-2xl font-black text-base shadow-lg transition-transform transform flex-1 text-center ${isGeneratingAI ? 'bg-indigo-400 cursor-not-allowed' : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:scale-105 shadow-indigo-500/30'}`}
+                  placeholder="Scrivi qui il suggerimento del team di turno... (opzionale)"
+                  rows={2}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:border-[#6693BF] transition-colors"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={generateAIEvent}
+                  disabled={isGeneratingAI}
+                  className={`px-6 py-3 rounded-2xl font-black text-base shadow-lg transition-transform transform flex-1 text-center ${isGeneratingAI ? 'bg-[#6693BF] cursor-not-allowed' : 'bg-gradient-to-r from-[#1596C8] to-[#004F9F] hover:scale-105 shadow-[#004F9F/30]'}`}
                 >
                   {isGeneratingAI ? '✨ Elaborazione...' : '✨ Scatena Imprevisto AI'}
                 </button>
@@ -1420,8 +1450,8 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
               const teamScore = team?.totalScore || 0;
               
               return (
-                <div key={ageBracket} className={`bg-white rounded-3xl shadow-lg border-2 overflow-hidden transition-all flex flex-col h-full ${!isOccupied ? 'border-dashed border-slate-200 opacity-60' : isSubmitted ? 'border-emerald-400' : 'border-amber-300'}`}>
-                  <div className={`p-4 border-b flex justify-between items-center ${!isOccupied ? 'bg-slate-50' : isSubmitted ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                <div key={ageBracket} className={`bg-white rounded-3xl shadow-lg border-2 overflow-hidden transition-all flex flex-col h-full ${!isOccupied ? 'border-dashed border-slate-200 opacity-60' : isSubmitted ? 'border-[#39B2B6]' : 'border-[#F6B166]'}`}>
+                  <div className={`p-4 border-b flex justify-between items-center ${!isOccupied ? 'bg-slate-50' : isSubmitted ? 'bg-[#D8F0F1] border-[#B1E0E2]' : 'bg-[#FCE5CC] border-[#FCE5CC]'}`}>
                     <div className="flex-1 min-w-0 pr-4">
                       <h3 className="font-black text-slate-800 text-xl truncate">{isOccupied ? team.groupName : 'In attesa...'}</h3>
                       <span className="text-sm font-bold text-slate-500">{ageBracket} anni</span>
@@ -1430,27 +1460,27 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {isOccupied ? (
                           <>
-                             <div className="flex items-center gap-1 bg-white text-amber-600 px-3 py-1 rounded-full text-sm font-black border border-amber-200 shadow-sm">
+                             <div className="flex items-center gap-1 bg-white text-[#F07D00] px-3 py-1 rounded-full text-sm font-black border border-[#F9CB99] shadow-sm">
                                 <span>🏆</span> {teamScore} pt
                              </div>
-                             <span className={`px-3 py-1 rounded-full text-xs font-black border ${isSubmitted ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'}`}>
+                             <span className={`px-3 py-1 rounded-full text-xs font-black border ${isSubmitted ? 'bg-[#B1E0E2] text-[#1E6365] border-[#88D0D2]' : 'bg-[#FCE5CC] text-[#C06300] border-[#F9CB99]'}`}>
                                 {isSubmitted ? 'CONSEGNATO' : 'IN BOZZA'}
                              </span>
                              <button 
                                 onClick={() => openAdminEditModal(ageBracket)}
                                 title="Modifica manualmente questa squadra"
-                                className="w-8 h-8 flex items-center justify-center bg-white text-teal-600 rounded-full shadow hover:bg-teal-500 hover:text-white transition-colors border border-teal-100"
+                                className="w-8 h-8 flex items-center justify-center bg-white text-[#004F9F] rounded-full shadow hover:bg-[#EBF4FB]0 hover:text-white transition-colors border border-[#CCD9EA]"
                              >✏️</button>
                              <button 
                                onClick={() => kickTeamFromRoom(ageBracket)}
                                title="Espelli squadra e libera la fascia"
-                               className="w-8 h-8 flex items-center justify-center bg-white text-rose-500 rounded-full shadow hover:bg-rose-500 hover:text-white transition-colors border border-rose-100"
+                               className="w-8 h-8 flex items-center justify-center bg-white text-[#E6325E] rounded-full shadow hover:bg-[#FAD5DE]0 hover:text-white transition-colors border border-[#FAD5DE]"
                              >✕</button>
                           </>
                         ) : (
                           <button 
                              onClick={() => openAdminEditModal(ageBracket)}
-                             className="px-4 py-1.5 bg-white border-2 border-slate-200 text-slate-500 font-bold rounded-full hover:border-teal-400 hover:text-teal-600 transition-colors text-sm"
+                             className="px-4 py-1.5 bg-white border-2 border-slate-200 text-slate-500 font-bold rounded-full hover:border-[#6693BF] hover:text-[#004F9F] transition-colors text-sm"
                           >
                              ✏️ Crea Gruppo
                           </button>
@@ -1478,7 +1508,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                       </ul>
                       <div className="bg-slate-50 rounded-xl p-3 flex justify-between items-center border border-slate-100 mt-auto">
                         <span className="text-xs font-bold text-slate-500 uppercase">Totale Inserito</span>
-                        <span className={`font-black text-lg ${groupTotal === 100 ? 'text-emerald-600' : 'text-rose-500'}`}>{groupTotal}%</span>
+                        <span className={`font-black text-lg ${groupTotal === 100 ? 'text-[#39B2B6]' : 'text-[#E6325E]'}`}>{groupTotal}%</span>
                       </div>
                     </div>
                   ) : (
