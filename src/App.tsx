@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut 
+} from 'firebase/auth';
 import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -98,7 +105,6 @@ const LongevityGame = ({ isSimulator = false }) => {
   // Stati Admin
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
   const [roomNameInput, setRoomNameInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
@@ -111,16 +117,38 @@ const LongevityGame = ({ isSimulator = false }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        await signInAnonymously(auth);
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
       } catch (error) {
         console.error("Auth error:", error);
       }
     };
     initAuth();
 
-    const unsubscribe = onAuthStateChanged(auth, setUser);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      
+      if (currentUser && currentUser.email) {
+        // Controllo White List su Firestore nel percorso corretto
+        try {
+          const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'admins', currentUser.email.toLowerCase()));
+          if (adminDoc.exists()) {
+            setIsAdmin(true);
+            if (view === 'join' && !isSimulator) setView('admin_lobby');
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (e) {
+          console.error("Errore verifica admin:", e);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
     return () => unsubscribe();
-  }, []);
+  }, [view, isSimulator]);
 
   // --- LISTENER PER LA STANZA SPECIFICA ---
   useEffect(() => {
@@ -276,16 +304,41 @@ const LongevityGame = ({ isSimulator = false }) => {
   };
 
   // --- LOGICHE ADMIN ---
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    if (adminPassword === 'amundi2026') { 
-      setIsAdmin(true);
-      setShowAdminLogin(false);
-      setAdminPassword('');
-      setView('admin_lobby');
-      showMessage("Accesso Regia Centrale effettuato.", "success");
-    } else {
-      showMessage("Password errata.", "error");
+  const handleAdminGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email?.toLowerCase();
+      if (!email) return;
+
+      // Verifica immediata su Firestore nel percorso corretto
+      const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'admins', email));
+      
+      if (adminDoc.exists()) {
+        setIsAdmin(true);
+        setShowAdminLogin(false);
+        setView('admin_lobby');
+        showMessage(`Benvenuto, ${result.user.displayName}`, "success");
+      } else {
+        await signOut(auth);
+        await signInAnonymously(auth);
+        showMessage("Accesso negato: email non presente nella lista istruttori.", "error");
+      }
+    } catch (error) {
+      console.error("Google Login Error:", error);
+      showMessage("Errore durante l'accesso con Google.", "error");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      await signInAnonymously(auth);
+      setIsAdmin(false);
+      setView('join');
+      showMessage("Logout effettuato.", "info");
+    } catch (error) {
+      showMessage("Errore durante il logout.", "error");
     }
   };
 
@@ -486,16 +539,22 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       }
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     const fetchWithRetry = async (retries = 5, delay = 1000) => {
+      // Usiamo la Netlify Function come scudo per la sicurezza
+      const functionUrl = '/.netlify/functions/generate-event';
+      
       for (let i = 0; i < retries; i++) {
         try {
-          const res = await fetch(url, {
+          const res = await fetch(functionUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+          }
           return await res.json();
         } catch (e) {
           if (i === retries - 1) throw e;
@@ -723,6 +782,8 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
     );
   };
 
+  const [showSimulator, setShowSimulator] = useState(false);
+
   return (
     <div className={`bg-slate-50 font-sans text-slate-800 flex flex-col items-center py-6 px-4 ${isSimulator ? 'min-h-full' : 'min-h-screen md:p-8'}`}>
       
@@ -731,6 +792,36 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white transition-all transform animate-fade-in-down ${notification.type === 'error' ? 'bg-rose-500' : notification.type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
           {notification.message}
         </div>
+      )}
+
+      {/* Simulatore Smartphone (Riservato all'Admin) */}
+      {isAdmin && !isSimulator && (
+        <>
+          <button 
+            onClick={() => setShowSimulator(!showSimulator)} 
+            className="fixed bottom-6 right-6 bg-indigo-600 text-white w-16 h-16 rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)] z-50 hover:bg-indigo-500 transition-transform transform hover:scale-110 flex items-center justify-center text-3xl border-2 border-indigo-400"
+            title="Simula Smartphone Consulente"
+          >
+            📱
+          </button>
+
+          {showSimulator && (
+            <div className="fixed bottom-24 right-6 w-[375px] h-[667px] bg-slate-900 rounded-[3rem] shadow-2xl z-50 p-2 border-4 border-slate-700 overflow-hidden flex flex-col animate-fade-in-up">
+              {/* Top Notch dell'iPhone */}
+              <div className="w-24 h-6 bg-slate-900 absolute top-2 left-1/2 transform -translate-x-1/2 rounded-b-2xl z-50 flex items-center justify-center">
+                 <div className="w-12 h-1.5 bg-slate-800 rounded-full"></div>
+              </div>
+              
+              {/* Lo Schermo (Esegue una versione indipendente dell'App) */}
+              <div className="flex-1 bg-white rounded-[2.5rem] overflow-y-auto custom-scrollbar relative border border-slate-800 pt-6">
+                 <LongevityGame isSimulator={true} />
+              </div>
+              
+              {/* Bottom Bar dell'iPhone */}
+              <div className="w-32 h-1 bg-slate-600 rounded-full mx-auto mt-2 mb-1"></div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal Edit Admin */}
@@ -786,34 +877,39 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       {/* Modal Admin Login */}
       {showAdminLogin && !isSimulator && (
         <div className="fixed inset-0 bg-slate-900 bg-opacity-70 z-40 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full">
-            <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+            <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center justify-center gap-2">
               <span>🔐</span> Regia Istruttore
             </h2>
-            <form onSubmit={handleAdminLogin}>
-              <input 
-                type="password" 
-                placeholder="Inserisci Password" 
-                className="w-full border-2 border-slate-200 p-4 rounded-xl mb-6 text-lg focus:border-teal-500 outline-none transition-colors"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                autoFocus
-              />
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowAdminLogin(false)} className="px-5 py-3 text-slate-500 hover:bg-slate-100 rounded-xl font-bold">Annulla</button>
-                <button type="submit" className="px-5 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg hover:bg-teal-700">Accedi</button>
-              </div>
-            </form>
+            <p className="text-slate-500 mb-8 text-sm">Accedi con il tuo account Google per gestire le aule.</p>
+            
+            <button 
+              onClick={handleAdminGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 hover:border-teal-500 p-4 rounded-xl mb-4 font-bold text-slate-700 transition-all shadow-sm hover:shadow-md"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+              Accedi con Google
+            </button>
+
+            <button onClick={() => setShowAdminLogin(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">Annulla</button>
           </div>
         </div>
       )}
 
       {/* HEADER GLOBALE */}
       <header className={`max-w-5xl w-full text-center bg-white rounded-3xl shadow-sm border-t-8 border-teal-600 relative ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
+        {isAdmin && !isSimulator && (
+          <button 
+            onClick={handleLogout}
+            className="absolute top-4 right-4 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+          >
+            Esci 🚪
+          </button>
+        )}
         <h1 
           className={`font-black text-teal-800 tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-teal-600'}`}
           onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView('admin_lobby'); } }}
-          title={!isSimulator ? "Clicca per Accesso Regia" : ""}
+          title={!isSimulator ? (isAdmin ? "Vai alla Lobby Admin" : "Clicca per Accesso Regia") : ""}
         >
           Longevity Game
         </h1>
@@ -1320,40 +1416,9 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
 // WRAPPER GLOBALE CON SIMULATORE SMARTPHONE
 // ==========================================
 const App = () => {
-  const [showSimulator, setShowSimulator] = useState(false);
-
   return (
     <div className="relative min-h-screen bg-slate-100">
-      
-      {/* L'App Principale (La Vista del PC in Aula) */}
       <LongevityGame />
-      
-      {/* Bottone per aprire il telefono virtuale */}
-      <button 
-        onClick={() => setShowSimulator(!showSimulator)} 
-        className="fixed bottom-6 right-6 bg-indigo-600 text-white w-16 h-16 rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)] z-50 hover:bg-indigo-500 transition-transform transform hover:scale-110 flex items-center justify-center text-3xl border-2 border-indigo-400"
-        title="Simula Smartphone Consulente"
-      >
-        📱
-      </button>
-
-      {/* L'Overlay dell'iPhone Virtuale */}
-      {showSimulator && (
-        <div className="fixed bottom-24 right-6 w-[375px] h-[667px] bg-slate-900 rounded-[3rem] shadow-2xl z-50 p-2 border-4 border-slate-700 overflow-hidden flex flex-col animate-fade-in-up">
-          {/* Top Notch dell'iPhone */}
-          <div className="w-24 h-6 bg-slate-900 absolute top-2 left-1/2 transform -translate-x-1/2 rounded-b-2xl z-50 flex items-center justify-center">
-             <div className="w-12 h-1.5 bg-slate-800 rounded-full"></div>
-          </div>
-          
-          {/* Lo Schermo (Esegue una versione indipendente dell'App) */}
-          <div className="flex-1 bg-white rounded-[2.5rem] overflow-y-auto custom-scrollbar relative border border-slate-800 pt-6">
-             <LongevityGame isSimulator={true} />
-          </div>
-          
-          {/* Bottom Bar dell'iPhone */}
-          <div className="w-32 h-1 bg-slate-600 rounded-full mx-auto mt-2 mb-1"></div>
-        </div>
-      )}
     </div>
   );
 };

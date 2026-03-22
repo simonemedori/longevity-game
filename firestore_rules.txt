@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Permetti l'accesso alle AULE di gioco (Lettura e Scrittura)
+    match /artifacts/simulatore-longevity-ca/public/data/games/{gameId} {
+      allow read, write: if true;
+    }
+
+    // 2. Permetti di LEGGERE la lista degli admin per verificare l'accesso
+    match /artifacts/simulatore-longevity-ca/admins/{email} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // 3. Protezione globale: blocca tutto il resto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
