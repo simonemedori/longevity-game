@@ -344,11 +344,15 @@ const LongevityGame = ({ isSimulator = false }) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const parsedConfig = JSON.parse(event.target.result);
         if (parsedConfig['0-25'] && parsedConfig['70+']) {
           setAppConfig(parsedConfig);
+          if (gameId) {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+            await updateDoc(docRef, { config: parsedConfig });
+          }
           showMessage("Nuova configurazione caricata con successo!", "success");
         } else {
           showMessage("Formato JSON non valido. Mancano le fasce d'età.", "error");
