@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -26,6 +26,74 @@ const appId = 'simulatore-longevity-ca';
 const gamesCol = () => collection(db, 'artifacts', appId, 'public', 'data', 'games');
 const gameDocRef = (id: string) => doc(db, 'artifacts', appId, 'public', 'data', 'games', id);
 const adminDocRef = (email: string) => doc(db, 'artifacts', appId, 'admins', email);
+
+// ==========================================
+// COSTANTI
+// ==========================================
+const VIEWS = {
+  JOIN: 'join',
+  SETUP: 'setup',
+  PLAY: 'play',
+  ADMIN_LOBBY: 'admin_lobby',
+  ADMIN_ROOM: 'admin_room',
+} as const;
+type View = typeof VIEWS[keyof typeof VIEWS];
+
+const STATUS = {
+  DRAFT: 'draft',
+  SUBMITTED: 'submitted',
+} as const;
+type TeamStatus = typeof STATUS[keyof typeof STATUS];
+
+// ==========================================
+// TIPI
+// ==========================================
+interface ProductMetrics {
+  [key: string]: string | undefined;
+}
+
+interface Product {
+  id: string;
+  icon: string;
+  name: string;
+  desc: string;
+  metrics: ProductMetrics;
+}
+
+interface BracketConfig {
+  title: string;
+  focus: string;
+  products: Product[];
+}
+
+type PortfoliosConfig = Record<string, BracketConfig>;
+
+interface Team {
+  groupName: string;
+  allocations: Record<string, string>;
+  status: TeamStatus;
+  totalScore: number;
+}
+
+interface GameEvent {
+  scenarioTitle: string;
+  scenarioDescription: string;
+  timestamp: number;
+  evaluations: Array<{
+    ageBracket: string;
+    teamName: string;
+    score: number;
+    feedback: string;
+  }>;
+}
+
+interface GameData {
+  createdAt: number;
+  marketName: string;
+  config: PortfoliosConfig;
+  teams: Record<string, Team>;
+  events: GameEvent[];
+}
 
 // ==========================================
 // CONFIGURAZIONE DI DEFAULT PRODOTTI
@@ -82,12 +150,12 @@ const defaultPortfoliosConfig = {
 // ==========================================
 const LongevityGame = ({ isSimulator = false }) => {
   const [user, setUser] = useState(null);
-  
+
   // Stati Globali e di Stanza
-  const [view, setView] = useState('join');
+  const [view, setView] = useState<View>(VIEWS.JOIN);
   const [gameId, setGameId] = useState('');
-  const [gameData, setGameData] = useState(null);
-  const [allGames, setAllGames] = useState([]);
+  const [gameData, setGameData] = useState<GameData | null>(null);
+  const [allGames, setAllGames] = useState<Array<GameData & { id: string }>>([]);
   
   // Configurazione Dinamica
   const [appConfig, setAppConfig] = useState(defaultPortfoliosConfig);
@@ -149,7 +217,7 @@ const LongevityGame = ({ isSimulator = false }) => {
 
   // --- LISTENER PER LA STANZA SPECIFICA ---
   useEffect(() => {
-    if (!user || !gameId || (view !== 'play' && view !== 'setup' && view !== 'admin_room')) return;
+    if (!user || !gameId || (view !== VIEWS.PLAY && view !== VIEWS.SETUP && view !== VIEWS.ADMIN_ROOM)) return;
 
     const unsubscribe = onSnapshot(gameDocRef(gameId), 
       (docSnap) => {
@@ -157,9 +225,9 @@ const LongevityGame = ({ isSimulator = false }) => {
           setGameData(docSnap.data());
         } else {
           setGameData(null);
-          if (view === 'play' || view === 'setup') {
+          if (view === VIEWS.PLAY || view === VIEWS.SETUP) {
              showMessage("L'aula è stata chiusa dall'istruttore.", "error");
-             setView('join');
+             setView(VIEWS.JOIN);
           }
         }
       },
@@ -171,7 +239,7 @@ const LongevityGame = ({ isSimulator = false }) => {
 
   // --- LISTENER GLOBALE PER TUTTE LE AULE (Solo Admin) ---
   useEffect(() => {
-    if (!user || !isAdmin || view !== 'admin_lobby') return;
+    if (!user || !isAdmin || view !== VIEWS.ADMIN_LOBBY) return;
 
     const q = query(gamesCol(), limit(50));
     const unsubscribe = onSnapshot(q, 
@@ -190,10 +258,10 @@ const LongevityGame = ({ isSimulator = false }) => {
   }, [user, isAdmin, view]);
 
   // --- AUTO-SAVE DEBOUNCE ---
-  const isMyTeamLocked = gameData?.teams?.[selectedAge]?.status === 'submitted';
+  const isMyTeamLocked = gameData?.teams?.[selectedAge]?.status === STATUS.SUBMITTED;
   
   useEffect(() => {
-    if (view !== 'play' || !gameId || !selectedAge || isMyTeamLocked) return;
+    if (view !== VIEWS.PLAY || !gameId || !selectedAge || isMyTeamLocked) return;
 
     const timeoutId = setTimeout(() => {
       const docRef = gameDocRef(gameId);
@@ -224,7 +292,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       const docSnap = await getDoc(gameDocRef(upperCode));
       if (docSnap.exists()) {
         setGameId(upperCode);
-        setView('setup');
+        setView(VIEWS.SETUP);
         showMessage(`Benvenuto nell'Aula ${upperCode}`, 'success');
       } else {
         showMessage("Codice Aula inesistente.", "error");
@@ -237,7 +305,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   };
 
   useEffect(() => {
-    if (user && view === 'join' && !isSimulator) {
+    if (user && view === VIEWS.JOIN && !isSimulator) {
       const urlParams = new URLSearchParams(window.location.search);
       const roomCode = urlParams.get('room');
       if (roomCode) {
@@ -271,14 +339,14 @@ const LongevityGame = ({ isSimulator = false }) => {
         [`teams.${selectedAge}`]: {
           groupName,
           allocations: initialAlloc,
-          status: 'draft',
+          status: STATUS.DRAFT,
           totalScore: 0
         }
       });
 
       setLocalAllocations(initialAlloc);
       setActiveTab(selectedAge);
-      setView('play');
+      setView(VIEWS.PLAY);
     } catch (error) {
       showMessage("Errore di connessione. Riprova.", "error");
     }
@@ -325,7 +393,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       if (adminDoc.exists()) {
         setIsAdmin(true);
         setShowAdminLogin(false);
-        setView('admin_lobby');
+        setView(VIEWS.ADMIN_LOBBY);
         showMessage(`Benvenuto, ${result.user.displayName}`, "success");
       } else {
         await signOut(auth);
@@ -349,7 +417,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       await signOut(auth);
       await signInAnonymously(auth);
       setIsAdmin(false);
-      setView('join');
+      setView(VIEWS.JOIN);
       showMessage("Logout effettuato.", "info");
     } catch (error) {
       showMessage("Errore durante il logout.", "error");
@@ -409,7 +477,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       });
       setGameId(newCode);
       setRoomNameInput('');
-      setView('admin_room');
+      setView(VIEWS.ADMIN_ROOM);
       showMessage(`Nuova Aula creata: ${newCode}`, "success");
     } catch(e) {
       showMessage("Errore nella creazione dell'aula.", "error");
@@ -419,7 +487,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   const deleteGameRoom = async (idToDel) => {
     try {
       await deleteDoc(gameDocRef(idToDel));
-      if (idToDel === gameId) setView('admin_lobby');
+      if (idToDel === gameId) setView(VIEWS.ADMIN_LOBBY);
       showMessage("Aula eliminata.", "info");
     } catch(e) {
       showMessage("Errore durante l'eliminazione.", "error");
@@ -463,7 +531,7 @@ const LongevityGame = ({ isSimulator = false }) => {
           [`teams.${editingTeam.ageBracket}`]: {
              groupName: editingTeam.groupName,
              allocations: editingTeam.allocations,
-             status: 'submitted',
+             status: STATUS.SUBMITTED,
              totalScore: gameData?.teams?.[editingTeam.ageBracket]?.totalScore || 0
           }
        });
@@ -480,7 +548,7 @@ const LongevityGame = ({ isSimulator = false }) => {
     
     const submittedTeams = Object.keys(gameData.teams).reduce((acc, bracket) => {
       const team = gameData.teams[bracket];
-      if (team.status === 'submitted') {
+      if (team.status === STATUS.SUBMITTED) {
         acc[bracket] = {
           groupName: team.groupName,
           allocations: {}
@@ -636,7 +704,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
     
     Object.keys(gameData.teams).forEach(ageBracket => {
       const team = gameData.teams[ageBracket];
-      if (team.status === 'submitted') {
+      if (team.status === STATUS.SUBMITTED) {
         const bracketData = activePortfolios[ageBracket];
         const readableAllocations = {};
         
@@ -688,7 +756,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       if(game.teams) {
         Object.keys(game.teams).forEach(ageBracket => {
            const team = game.teams[ageBracket];
-           if (team.status === 'submitted') {
+           if (team.status === STATUS.SUBMITTED) {
              const bracketData = configUsed[ageBracket];
              const readableAllocations = {};
              bracketData.products.forEach(p => {
@@ -720,15 +788,19 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
   };
 
   // --- COMPONENTI UI SECONDARI ---
+  const rankedTeams = useMemo(() => {
+    if (!gameData?.teams) return [];
+    return Object.entries(gameData.teams)
+      .map(([age, team]) => ({ age, ...team }))
+      .filter(t => t.status === STATUS.SUBMITTED)
+      .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
+  }, [gameData?.teams]);
+
   const Leaderboard = () => {
      if (!gameData || !gameData.teams) return null;
-     
-     const rankedTeams = Object.entries(gameData.teams)
-       .map(([age, team]) => ({ age, ...team }))
-       .filter(t => t.status === 'submitted')
-       .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
 
      if (rankedTeams.length === 0) return null;
+
 
      return (
        <div className="mb-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -923,7 +995,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
         )}
         <h1 
           className={`font-black text-teal-800 tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-teal-600'}`}
-          onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView('admin_lobby'); } }}
+          onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView(VIEWS.ADMIN_LOBBY); } }}
           title={!isSimulator ? (isAdmin ? "Vai alla Lobby Admin" : "Clicca per Accesso Regia") : ""}
         >
           Longevity Game
@@ -931,7 +1003,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       </header>
 
       {/* VISTA 0: INSERIMENTO CODICE AULA */}
-      {view === 'join' && user && (
+      {view === VIEWS.JOIN && user && (
          <main className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-fade-in-up p-8 text-center border border-slate-100">
             <div className="w-20 h-20 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">🏢</span>
@@ -958,7 +1030,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       )}
 
       {/* VISTA 1: SETUP GIOCATORE */}
-      {view === 'setup' && user && (
+      {view === VIEWS.SETUP && user && (
         <main className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-fade-in-up border border-slate-100">
           <div className="bg-teal-600 text-white p-3 text-center font-bold tracking-widest text-xs">
             AULA: {gameId}
@@ -1022,7 +1094,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       )}
 
       {/* VISTA 2: PLAY */}
-      {view === 'play' && (
+      {view === VIEWS.PLAY && (
         <main className="max-w-4xl w-full animate-fade-in-up">
           
           <div className="flex justify-between items-center mb-4 px-2">
@@ -1054,8 +1126,8 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                   >
                     <span className="flex items-center gap-1">
                       {tab}
-                      {tabTeam?.status === 'submitted' && <span title="Completato">✔️</span>}
-                      {tabTeam?.status === 'draft' && !isMyTab && <span title="In lavorazione" className="animate-pulse text-amber-500">⏳</span>}
+                      {tabTeam?.status === STATUS.SUBMITTED && <span title="Completato">✔️</span>}
+                      {tabTeam?.status === STATUS.DRAFT && !isMyTab && <span title="In lavorazione" className="animate-pulse text-amber-500">⏳</span>}
                     </span>
                     {!isMyTab && tabTeam && (
                        <span className="text-[9px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full truncate max-w-[80px]">
@@ -1191,7 +1263,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       )}
 
       {/* VISTA 3A: ADMIN LOBBY */}
-      {view === 'admin_lobby' && isAdmin && !isSimulator && (
+      {view === VIEWS.ADMIN_LOBBY && isAdmin && !isSimulator && (
         <main className="w-full max-w-5xl animate-fade-in-up pb-12">
            <div className="flex flex-col md:flex-row justify-between items-center bg-slate-800 text-white p-8 rounded-3xl shadow-2xl mb-8">
             <div>
@@ -1265,7 +1337,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
                   
                   <div className="flex gap-2 mt-6">
                     <button 
-                      onClick={() => { setGameId(game.id); setView('admin_room'); }}
+                      onClick={() => { setGameId(game.id); setView(VIEWS.ADMIN_ROOM); }}
                       className="flex-1 bg-slate-100 hover:bg-teal-600 hover:text-white text-slate-700 font-bold py-3 rounded-xl transition-colors"
                     >
                       Entra / Proietta
@@ -1285,10 +1357,10 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
       )}
 
       {/* VISTA 3B: ADMIN ROOM */}
-      {view === 'admin_room' && isAdmin && gameData && !isSimulator && (
+      {view === VIEWS.ADMIN_ROOM && isAdmin && gameData && !isSimulator && (
         <main className="w-full max-w-6xl animate-fade-in-up pb-12">
           
-          <button onClick={() => setView('admin_lobby')} className="text-slate-500 font-bold hover:text-slate-800 flex items-center gap-1 mb-4 px-2">
+          <button onClick={() => setView(VIEWS.ADMIN_LOBBY)} className="text-slate-500 font-bold hover:text-slate-800 flex items-center gap-1 mb-4 px-2">
              <span>←</span> Torna alla Lobby
           </button>
 
@@ -1343,7 +1415,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
             {Object.keys(activePortfolios).map(ageBracket => {
               const team = gameData.teams?.[ageBracket];
               const isOccupied = !!team;
-              const isSubmitted = team?.status === 'submitted';
+              const isSubmitted = team?.status === STATUS.SUBMITTED;
               const groupTotal = team ? Object.values(team.allocations).reduce((sum, val) => sum + (parseInt(val) || 0), 0) : 0;
               const teamScore = team?.totalScore || 0;
               
