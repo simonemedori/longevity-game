@@ -455,11 +455,6 @@ const LongevityGame = ({ isSimulator = false }) => {
 
   // --- GEMINI AI INTEGRATION ---
   const generateAIEvent = async () => {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("INCOLLA_QUI")) {
-      showMessage("Errore: Chiave API Gemini non configurata. Inseriscila nel codice prima di pubblicare.", "error");
-      return;
-    }
-
     if (!gameData || !gameData.teams) return;
     
     const submittedTeams = Object.keys(gameData.teams).reduce((acc, bracket) => {
