@@ -34,6 +34,7 @@ const VIEWS = {
   JOIN: 'join',
   SETUP: 'setup',
   PLAY: 'play',
+  SPECTATOR: 'spectator',
   ADMIN_LOBBY: 'admin_lobby',
   ADMIN_ROOM: 'admin_room',
 } as const;
@@ -218,7 +219,7 @@ const LongevityGame = ({ isSimulator = false }) => {
 
   // --- LISTENER PER LA STANZA SPECIFICA ---
   useEffect(() => {
-    if (!user || !gameId || (view !== VIEWS.PLAY && view !== VIEWS.SETUP && view !== VIEWS.ADMIN_ROOM)) return;
+    if (!user || !gameId || (view !== VIEWS.PLAY && view !== VIEWS.SETUP && view !== VIEWS.SPECTATOR && view !== VIEWS.ADMIN_ROOM)) return;
 
     const unsubscribe = onSnapshot(gameDocRef(gameId), 
       (docSnap) => {
@@ -226,7 +227,7 @@ const LongevityGame = ({ isSimulator = false }) => {
           setGameData(docSnap.data());
         } else {
           setGameData(null);
-          if (view === VIEWS.PLAY || view === VIEWS.SETUP) {
+          if (view === VIEWS.PLAY || view === VIEWS.SETUP || view === VIEWS.SPECTATOR) {
              showMessage("L'aula è stata chiusa dall'istruttore.", "error");
              setView(VIEWS.JOIN);
           }
@@ -257,6 +258,16 @@ const LongevityGame = ({ isSimulator = false }) => {
 
     return () => unsubscribe();
   }, [user, isAdmin, view]);
+
+  // --- AUTO-REDIRECT A SPECTATOR SE LA STANZA SI RIEMPIE IN SETUP ---
+  useEffect(() => {
+    if (view !== VIEWS.SETUP || !gameData || !activePortfolios) return;
+    const allBracketsFull = Object.keys(activePortfolios).every(b => gameData.teams?.[b]);
+    if (allBracketsFull) {
+      setView(VIEWS.SPECTATOR);
+      showMessage("Tutti i posti sono stati occupati — sei in modalità spettatore", 'info');
+    }
+  }, [gameData, view]);
 
   // --- AUTO-SAVE DEBOUNCE ---
   const isMyTeamLocked = gameData?.teams?.[selectedAge]?.status === STATUS.SUBMITTED;
@@ -292,9 +303,18 @@ const LongevityGame = ({ isSimulator = false }) => {
     try {
       const docSnap = await getDoc(gameDocRef(upperCode));
       if (docSnap.exists()) {
+        const data = docSnap.data();
+        const config = data.config || appConfig;
+        const allBracketsFull = Object.keys(config).every(b => data.teams?.[b]);
         setGameId(upperCode);
-        setView(VIEWS.SETUP);
-        showMessage(`Benvenuto nell'Aula ${upperCode}`, 'success');
+        if (allBracketsFull) {
+          setGameData(data);
+          setView(VIEWS.SPECTATOR);
+          showMessage(`Aula ${upperCode} al completo — sei in modalità spettatore`, 'info');
+        } else {
+          setView(VIEWS.SETUP);
+          showMessage(`Benvenuto nell'Aula ${upperCode}`, 'success');
+        }
       } else {
         showMessage("Codice Aula inesistente.", "error");
       }
@@ -818,15 +838,14 @@ STILE — TASSATIVO:
          <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
            <span>🏆</span> Classifica Generale
          </h3>
-         <div className="flex flex-wrap gap-4">
+         <div className="grid grid-cols-4 gap-3">
            {rankedTeams.map((t, idx) => (
              <div key={t.age} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${idx === 0 ? 'bg-[#FCE5CC] border-[#F9CB99]' : 'bg-slate-50 border-slate-200'}`}>
-                <span className={`text-xl font-black ${idx === 0 ? 'text-[#F07D00]' : 'text-slate-400'}`}>#{idx + 1}</span>
-                <div>
-                   <div className="font-bold text-slate-800">{t.groupName}</div>
-                   <div className="text-xs text-slate-500 font-bold">{t.age} anni</div>
+                <span className={`text-xl font-black flex-shrink-0 ${idx === 0 ? 'text-[#F07D00]' : 'text-slate-400'}`}>#{idx + 1}</span>
+                <div className="min-w-0">
+                   <div className="font-bold text-slate-800 leading-tight truncate">{t.groupName}</div>
+                   <div className={`text-sm font-black ${idx === 0 ? 'text-[#F07D00]' : 'text-[#39B2B6]'}`}>{t.totalScore || 0} pt</div>
                 </div>
-                <div className="ml-4 font-black text-[#39B2B6] text-xl">{t.totalScore || 0} pt</div>
              </div>
            ))}
          </div>
@@ -853,7 +872,7 @@ STILE — TASSATIVO:
               <p className="text-[#CCD9EA] leading-relaxed font-medium text-base md:text-lg">{ev.scenarioDescription}</p>
             </div>
             <div className="p-6 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ev.evaluations.map((evalItem, i) => {
+              {[...ev.evaluations].sort((a, b) => b.score - a.score).map((evalItem, i) => {
                 const isGood = evalItem.score >= 7;
                 const isBad = evalItem.score < 5;
                 return (
@@ -891,8 +910,8 @@ STILE — TASSATIVO:
         </div>
       )}
 
-      {/* Simulatore Smartphone (Riservato all'Admin) */}
-      {isAdmin && !isSimulator && (
+      {/* Simulatore Smartphone (solo nelle view admin) */}
+      {isAdmin && !isSimulator && (view === VIEWS.ADMIN_LOBBY || view === VIEWS.ADMIN_ROOM) && (
         <>
           <button 
             onClick={() => setShowSimulator(!showSimulator)} 
@@ -995,7 +1014,7 @@ STILE — TASSATIVO:
       )}
 
       {/* HEADER GLOBALE */}
-      <header className={`max-w-6xl w-full bg-white rounded-3xl shadow-sm border-t-8 border-[#004F9F] flex items-center justify-between overflow-hidden ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
+      <header className={`max-w-6xl w-full bg-[#C19135] rounded-3xl shadow-sm border-t-8 border-[#004F9F] flex items-center justify-between overflow-hidden ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
         {/* Spazio sinistro bilanciamento */}
         <div className="w-24 flex-shrink-0" />
         <h1
@@ -1282,6 +1301,85 @@ STILE — TASSATIVO:
           </div>
 
           {/* Area Risultati IA per i giocatori */}
+          <EventsLog />
+
+        </main>
+      )}
+
+      {/* VISTA 2B: SPETTATORE */}
+      {view === VIEWS.SPECTATOR && gameData && activePortfolios && (
+        <main className="max-w-6xl w-full animate-fade-in-up pb-12">
+
+          {/* Banner spettatore */}
+          <div className="mb-6 flex items-center gap-3 bg-white border-2 border-[#CCD9EA] rounded-2xl px-6 py-4 shadow-sm w-full">
+            <span className="text-3xl">👁</span>
+            <div>
+              <h2 className="font-black text-[#003063] text-xl leading-tight">Modalità Spettatore</h2>
+              <p className="text-sm text-slate-500 font-medium">Tutti i posti sono occupati — stai osservando in tempo reale.</p>
+            </div>
+            <span className="ml-auto bg-[#004F9F] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+              AULA {gameId}
+            </span>
+          </div>
+
+          {/* Classifica */}
+          <Leaderboard />
+
+          {/* Schede portafoglio di ciascuna fascia — sola lettura, ordinate per punteggio */}
+          <div className="space-y-4 mb-8">
+            {[
+              ...rankedTeams.map(t => t.age),
+              ...Object.keys(activePortfolios).filter(age => !gameData.teams?.[age] || gameData.teams[age].status !== STATUS.SUBMITTED)
+            ].map(age => {
+              const team = gameData.teams?.[age];
+              const portfolio = activePortfolios[age];
+              return (
+                <div key={age} className="bg-white rounded-3xl shadow-sm border border-[#CCD9EA] overflow-hidden">
+                  <div className="bg-[#EBF4FB] border-b border-[#CCD9EA] p-4 md:p-5 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-black text-slate-800 text-lg">{portfolio.title}</h3>
+                      <p className="text-xs font-semibold text-[#004F9F] mt-0.5">{portfolio.focus}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {team ? (
+                        <>
+                          <span className="text-sm font-bold text-slate-600">{team.groupName}</span>
+                          <span className={`text-xs font-black px-3 py-1 rounded-full ${team.status === STATUS.SUBMITTED ? 'bg-[#D8F0F1] text-[#1D7A7D]' : 'bg-[#FCE5CC] text-[#C06300] animate-pulse'}`}>
+                            {team.status === STATUS.SUBMITTED ? '✅ Consegnato' : '⏳ In corso'}
+                          </span>
+                          <span className="font-black text-[#39B2B6]">{team.totalScore || 0} pt</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-400 font-bold italic">Posto libero</span>
+                      )}
+                    </div>
+                  </div>
+                  {team && team.allocations && (
+                    <div className="p-4 md:p-5 space-y-2">
+                      {portfolio.products.map(prod => {
+                        const val = team.allocations?.[prod.id] || '';
+                        return (
+                          <div key={prod.id} className="flex items-center p-2.5 rounded-xl border border-[#CCD9EA] bg-slate-50">
+                            <span className="text-2xl mr-3 flex-shrink-0">{prod.icon}</span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="font-bold text-sm text-slate-800 truncate">{prod.name}</span>
+                              <span className="text-[10px] font-semibold text-[#004F9F] truncate">{prod.desc}</span>
+                            </div>
+                            <div className="flex items-center border border-[#99B5D5] rounded-lg overflow-hidden bg-[#EBF4FB] w-20 flex-shrink-0">
+                              <span className="flex-1 text-center font-black text-[#001C4B] py-1.5 text-base">{val || '—'}</span>
+                              <span className="px-2 font-black text-xs border-l border-[#99B5D5] text-[#6693BF] self-stretch flex items-center">%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Cronache */}
           <EventsLog />
 
         </main>
