@@ -37,8 +37,11 @@ const VIEWS = {
   SPECTATOR: 'spectator',
   ADMIN_LOBBY: 'admin_lobby',
   ADMIN_ROOM: 'admin_room',
+  GLOBAL_LEADERBOARD: 'global_leaderboard',
 } as const;
 type View = typeof VIEWS[keyof typeof VIEWS];
+
+const MAX_ROUNDS = 4;
 
 const STATUS = {
   DRAFT: 'draft',
@@ -154,6 +157,7 @@ const LongevityGame = ({ isSimulator = false }) => {
 
   // Stati Globali e di Stanza
   const [view, setView] = useState<View>(VIEWS.JOIN);
+  const [prevView, setPrevView] = useState<View>(VIEWS.JOIN);
   const [gameId, setGameId] = useState('');
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [allGames, setAllGames] = useState<Array<GameData & { id: string }>>([]);
@@ -239,9 +243,9 @@ const LongevityGame = ({ isSimulator = false }) => {
     return () => unsubscribe();
   }, [user, gameId, view]);
 
-  // --- LISTENER GLOBALE PER TUTTE LE AULE (Solo Admin) ---
+  // --- LISTENER GLOBALE PER TUTTE LE AULE ---
   useEffect(() => {
-    if (!user || !isAdmin || view !== VIEWS.ADMIN_LOBBY) return;
+    if (!user || (view !== VIEWS.ADMIN_LOBBY && view !== VIEWS.GLOBAL_LEADERBOARD)) return;
 
     const q = query(gamesCol(), limit(50));
     const unsubscribe = onSnapshot(q, 
@@ -319,6 +323,28 @@ const LongevityGame = ({ isSimulator = false }) => {
         showMessage("Codice Aula inesistente.", "error");
       }
     } catch (error) {
+      showMessage("Errore di connessione. Riprova.", "error");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleViewGlobalLeaderboard = async (code: string) => {
+    const upperCode = code.trim().toUpperCase();
+    if (upperCode.length < 3) {
+      showMessage("Inserisci il codice della tua aula per continuare.", "error");
+      return;
+    }
+    setIsJoining(true);
+    try {
+      const docSnap = await getDoc(gameDocRef(upperCode));
+      if (docSnap.exists()) {
+        setPrevView(view);
+        setView(VIEWS.GLOBAL_LEADERBOARD);
+      } else {
+        showMessage("Codice Aula inesistente.", "error");
+      }
+    } catch {
       showMessage("Errore di connessione. Riprova.", "error");
     } finally {
       setIsJoining(false);
@@ -827,6 +853,30 @@ STILE — TASSATIVO:
       .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
   }, [gameData?.teams]);
 
+  const globalTeams = useMemo(() => {
+    return allGames.flatMap(game =>
+      Object.entries(game.teams || {}).map(([age, team]: [string, any]) => ({
+        roomId: game.id,
+        age,
+        groupName: team.groupName,
+        totalScore: team.totalScore || 0,
+        status: team.status,
+        roomRounds: (game as any).events?.length || 0,
+      }))
+    )
+    .filter(t => t.status === STATUS.SUBMITTED)
+    .sort((a, b) => b.totalScore - a.totalScore);
+  }, [allGames]);
+
+  const globalByBracket = useMemo(() => {
+    const brackets: Record<string, typeof globalTeams> = {};
+    globalTeams.forEach(t => {
+      if (!brackets[t.age]) brackets[t.age] = [];
+      brackets[t.age].push(t);
+    });
+    return brackets;
+  }, [globalTeams]);
+
   const Leaderboard = () => {
      if (!gameData || !gameData.teams) return null;
 
@@ -853,6 +903,22 @@ STILE — TASSATIVO:
      );
   };
 
+  const deleteAIEvent = async (eventIndex: number) => {
+    if (!gameId || !gameData?.events) return;
+    if (!window.confirm('Eliminare questo imprevisto? I punti assegnati verranno sottratti.')) return;
+
+    const eventToDelete = gameData.events[eventIndex];
+    const newEvents = gameData.events.filter((_, i) => i !== eventIndex);
+
+    const updates: Record<string, any> = { events: newEvents };
+    eventToDelete.evaluations.forEach((ev: any) => {
+      const current = gameData.teams?.[ev.ageBracket]?.totalScore || 0;
+      updates[`teams.${ev.ageBracket}.totalScore`] = Math.max(0, current - ev.score);
+    });
+
+    await updateDoc(gameDocRef(gameId), updates);
+  };
+
   const EventsLog = () => {
     const events = gameData?.events || [];
     if (events.length === 0) return null;
@@ -864,7 +930,16 @@ STILE — TASSATIVO:
         </h3>
         {events.map((ev, idx) => (
           <div key={idx} className="bg-white rounded-3xl shadow-xl overflow-hidden border-2 border-[#CCD9EA] animate-fade-in-up">
-            <div className="bg-gradient-to-r from-[#004F9F] to-[#009EE0] p-6 text-white">
+            <div className="bg-gradient-to-r from-[#004F9F] to-[#009EE0] p-6 text-white relative">
+              {isAdmin && view === VIEWS.ADMIN_ROOM && (
+                <button
+                  onClick={() => deleteAIEvent(idx)}
+                  className="absolute top-4 right-4 bg-white/20 hover:bg-[#E6325E] text-white text-xs font-bold px-3 py-1.5 rounded-full transition-colors"
+                  title="Elimina imprevisto"
+                >
+                  🗑️ Elimina
+                </button>
+              )}
               <span className="bg-white/20 text-[#EBF4FB] text-xs font-bold px-3 py-1 rounded-full mb-3 inline-block uppercase tracking-wider">
                 {new Date(ev.timestamp).toLocaleTimeString('it-IT')} - Imprevisto #{events.length - idx}{ev.hintUsed ? ' (su suggerimento)' : ''}
               </span>
@@ -1035,6 +1110,14 @@ STILE — TASSATIVO:
                   🏛️ Lobby
                 </button>
               )}
+              {view !== VIEWS.GLOBAL_LEADERBOARD && (
+                <button
+                  onClick={() => { setPrevView(view); setView(VIEWS.GLOBAL_LEADERBOARD); }}
+                  className="bg-slate-100 hover:bg-[#EBF4FB] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
+                >
+                  🌍 Globale
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="bg-slate-100 hover:bg-[#FAD5DE] text-slate-500 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
@@ -1042,6 +1125,14 @@ STILE — TASSATIVO:
                 🚪 Esci
               </button>
             </>
+          )}
+          {!isAdmin && !isSimulator && gameId && view !== VIEWS.GLOBAL_LEADERBOARD && (
+            <button
+              onClick={() => { setPrevView(view); setView(VIEWS.GLOBAL_LEADERBOARD); }}
+              className="bg-slate-100 hover:bg-[#EBF4FB] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
+            >
+              🌍 Globale
+            </button>
           )}
         </div>
       </header>
@@ -1070,6 +1161,16 @@ STILE — TASSATIVO:
             >
               {isJoining ? 'Connessione...' : 'Entra 🚀'}
             </button>
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-400 mb-3">Hai già partecipato a una sessione?</p>
+              <button
+                onClick={() => handleViewGlobalLeaderboard(joinCodeInput)}
+                disabled={isJoining}
+                className="w-full text-[#004F9F] font-bold text-sm p-3 rounded-xl border-2 border-[#CCD9EA] hover:bg-[#EBF4FB] transition-colors"
+              >
+                🌍 Vedi Classifica Globale
+              </button>
+            </div>
          </main>
       )}
 
@@ -1385,6 +1486,103 @@ STILE — TASSATIVO:
         </main>
       )}
 
+      {/* VISTA 2C: CLASSIFICA GLOBALE */}
+      {view === VIEWS.GLOBAL_LEADERBOARD && (
+        <main className="max-w-6xl w-full animate-fade-in-up pb-12">
+
+          {/* Banner */}
+          <div className="mb-6 flex items-center gap-3 bg-white border-2 border-[#CCD9EA] rounded-2xl px-6 py-4 shadow-sm w-full">
+            <span className="text-3xl">🌍</span>
+            <div>
+              <h2 className="font-black text-[#003063] text-xl leading-tight">Classifica Globale</h2>
+              <p className="text-sm text-slate-500 font-medium">{allGames.length} aule in gioco — dati in tempo reale</p>
+            </div>
+            <button
+              onClick={() => setView(prevView)}
+              className="ml-auto bg-slate-100 hover:bg-[#CCD9EA] text-slate-600 hover:text-[#003063] px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+            >
+              ← Torna
+            </button>
+          </div>
+
+          {allGames.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center text-slate-400 border border-slate-100">
+              <span className="text-5xl block mb-4">⏳</span>
+              <p className="font-bold">Caricamento dati in corso...</p>
+            </div>
+          ) : (
+            <>
+              {/* CLASSIFICA ASSOLUTA */}
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-6">
+                <h3 className="text-xl font-black text-slate-800 mb-5 flex items-center gap-2">
+                  <span>🏆</span> Classifica Assoluta
+                </h3>
+                {globalTeams.length === 0 ? (
+                  <p className="text-slate-400 text-sm italic">Nessun gruppo ha ancora consegnato.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {globalTeams.slice(0, 3).map((t, idx) => (
+                      <div key={`${t.roomId}-${t.age}`} className={`flex items-center gap-4 px-4 py-3 rounded-xl border ${idx === 0 ? 'bg-[#FCE5CC] border-[#F9CB99]' : 'bg-slate-50 border-slate-200'}`}>
+                        <span className={`text-lg font-black w-8 text-center flex-shrink-0 ${idx === 0 ? 'text-[#F07D00]' : 'text-slate-400'}`}>#{idx + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-slate-800 leading-tight truncate">{t.groupName}</div>
+                          <div className="text-xs text-slate-500 font-medium">Aula {t.roomId} · {t.age} anni</div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="text-xs bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                            {t.roomRounds}/{MAX_ROUNDS} round
+                          </span>
+                          <span className={`text-lg font-black ${idx === 0 ? 'text-[#F07D00]' : 'text-[#39B2B6]'}`}>
+                            {t.totalScore} pt
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* CLASSIFICHE PER FASCIA */}
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <h3 className="text-xl font-black text-slate-800 mb-5 flex items-center gap-2">
+                  <span>📊</span> Classifica per Fascia d'Età
+                </h3>
+                {Object.keys(globalByBracket).length === 0 ? (
+                  <p className="text-slate-400 text-sm italic">Nessun gruppo ha ancora consegnato.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {Object.entries(globalByBracket)
+                      .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                      .map(([age, teams]) => (
+                        <div key={age}>
+                          <h4 className="font-black text-[#004F9F] text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#004F9F] inline-block"></span>
+                            Portafoglio {age} anni
+                          </h4>
+                          <div className="space-y-2">
+                            {teams.slice(0, 3).map((t, idx) => (
+                              <div key={`${t.roomId}-${t.age}-${idx}`} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${idx === 0 ? 'bg-[#D8F0F1] border-[#88D0D2]' : 'bg-slate-50 border-slate-200'}`}>
+                                <span className={`text-sm font-black w-6 text-center flex-shrink-0 ${idx === 0 ? 'text-[#1D7A7D]' : 'text-slate-400'}`}>#{idx + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-slate-800 text-sm truncate">{t.groupName}</div>
+                                  <div className="text-[10px] text-slate-500 font-medium">Aula {t.roomId}</div>
+                                </div>
+                                <span className={`font-black text-sm flex-shrink-0 ${idx === 0 ? 'text-[#1D7A7D]' : 'text-[#39B2B6]'}`}>
+                                  {t.totalScore} pt
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </main>
+      )}
+
       {/* VISTA 3A: ADMIN LOBBY */}
       {view === VIEWS.ADMIN_LOBBY && isAdmin && !isSimulator && (
         <main className="w-full max-w-5xl animate-fade-in-up pb-12">
@@ -1537,13 +1735,17 @@ STILE — TASSATIVO:
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={generateAIEvent}
-                  disabled={isGeneratingAI}
-                  className={`px-6 py-3 rounded-2xl font-black text-base shadow-lg transition-transform transform flex-1 text-center ${isGeneratingAI ? 'bg-[#6693BF] cursor-not-allowed' : 'bg-gradient-to-r from-[#1596C8] to-[#004F9F] hover:scale-105 shadow-[#004F9F/30]'}`}
+                  disabled={isGeneratingAI || (gameData?.events?.length || 0) >= MAX_ROUNDS}
+                  className={`px-6 py-3 rounded-2xl font-black text-base shadow-lg transition-transform transform flex-1 text-center text-white ${isGeneratingAI || (gameData?.events?.length || 0) >= MAX_ROUNDS ? 'bg-[#6693BF] cursor-not-allowed' : 'bg-gradient-to-r from-[#1596C8] to-[#004F9F] hover:scale-105'}`}
                 >
-                  {isGeneratingAI ? '✨ Elaborazione...' : '✨ Scatena Imprevisto AI'}
+                  {isGeneratingAI
+                    ? '✨ Elaborazione...'
+                    : (gameData?.events?.length || 0) >= MAX_ROUNDS
+                      ? `✅ ${MAX_ROUNDS}/${MAX_ROUNDS} Round completati`
+                      : `✨ Scatena Imprevisto AI (${gameData?.events?.length || 0}/${MAX_ROUNDS})`}
                 </button>
-                <button 
-                  onClick={exportSingleRoom} 
+                <button
+                  onClick={exportSingleRoom}
                   className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold border border-slate-600 transition-colors flex-1 text-center"
                 >
                   📥 Esporta dati
