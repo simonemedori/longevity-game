@@ -1,5 +1,5 @@
 // netlify/functions/generate-event.js
-const https = require('https');
+import https from 'https';
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -8,7 +8,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
 
 const MAX_BODY_SIZE = 50 * 1024; // 50KB
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const origin = event.headers['origin'] || '';
 
   const corsHeaders = {

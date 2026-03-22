@@ -8,7 +8,7 @@ import {
   signInWithPopup, 
   signOut 
 } from 'firebase/auth';
-import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField } from 'firebase/firestore';
+import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField, limit } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -23,6 +23,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'simulatore-longevity-ca';
+const gamesCol = () => collection(db, 'artifacts', appId, 'public', 'data', 'games');
+const gameDocRef = (id: string) => doc(db, 'artifacts', appId, 'public', 'data', 'games', id);
+const adminDocRef = (email: string) => doc(db, 'artifacts', appId, 'admins', email);
 
 // ==========================================
 // CONFIGURAZIONE DI DEFAULT PRODOTTI
@@ -102,6 +105,8 @@ const LongevityGame = ({ isSimulator = false }) => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
 
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
@@ -126,7 +131,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       
       if (currentUser && currentUser.email) {
         try {
-          const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'admins', currentUser.email.toLowerCase()));
+          const adminDoc = await getDoc(adminDocRef(currentUser.email.toLowerCase()));
           if (adminDoc.exists()) {
             setIsAdmin(true);
           } else {
@@ -146,7 +151,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   useEffect(() => {
     if (!user || !gameId || (view !== 'play' && view !== 'setup' && view !== 'admin_room')) return;
 
-    const unsubscribe = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId), 
+    const unsubscribe = onSnapshot(gameDocRef(gameId), 
       (docSnap) => {
         if (docSnap.exists()) {
           setGameData(docSnap.data());
@@ -168,7 +173,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   useEffect(() => {
     if (!user || !isAdmin || view !== 'admin_lobby') return;
 
-    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'games'));
+    const q = query(gamesCol(), limit(50));
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
         const games = [];
@@ -191,7 +196,7 @@ const LongevityGame = ({ isSimulator = false }) => {
     if (view !== 'play' || !gameId || !selectedAge || isMyTeamLocked) return;
 
     const timeoutId = setTimeout(() => {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+      const docRef = gameDocRef(gameId);
       updateDoc(docRef, { [`teams.${selectedAge}.allocations`]: localAllocations }).catch(e => {
         console.error(e);
         showMessage("Errore nel salvataggio automatico. Controlla la connessione.", "error");
@@ -214,15 +219,20 @@ const LongevityGame = ({ isSimulator = false }) => {
       return;
     }
 
-    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', upperCode);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      setGameId(upperCode);
-      setView('setup');
-      showMessage(`Benvenuto nell'Aula ${upperCode}`, 'success');
-    } else {
-      showMessage("Codice Aula inesistente.", "error");
+    setIsJoining(true);
+    try {
+      const docSnap = await getDoc(gameDocRef(upperCode));
+      if (docSnap.exists()) {
+        setGameId(upperCode);
+        setView('setup');
+        showMessage(`Benvenuto nell'Aula ${upperCode}`, 'success');
+      } else {
+        showMessage("Codice Aula inesistente.", "error");
+      }
+    } catch (error) {
+      showMessage("Errore di connessione. Riprova.", "error");
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -256,7 +266,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       const initialAlloc = {};
       activePortfolios[selectedAge].products.forEach(p => initialAlloc[p.id] = '');
       
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+      const docRef = gameDocRef(gameId);
       await updateDoc(docRef, {
         [`teams.${selectedAge}`]: {
           groupName,
@@ -287,7 +297,7 @@ const LongevityGame = ({ isSimulator = false }) => {
     if (!isPerfect || !user || !gameId) return;
 
     try {
-      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+      const docRef = gameDocRef(gameId);
       await updateDoc(docRef, {
         [`teams.${selectedAge}.allocations`]: localAllocations,
         [`teams.${selectedAge}.status`]: 'submitted'
@@ -302,14 +312,15 @@ const LongevityGame = ({ isSimulator = false }) => {
   const handleAdminGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     // Rimossa la forzatura del select_account che può causare blocchi in alcuni browser
-    
+
+    setIsLoggingIn(true);
     try {
       const result = await signInWithPopup(auth, provider);
       const email = result.user.email?.toLowerCase();
       if (!email) throw new Error("Email non trovata");
 
       // Verifica immediata su Firestore nel percorso corretto
-      const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'admins', email));
+      const adminDoc = await getDoc(adminDocRef(email));
       
       if (adminDoc.exists()) {
         setIsAdmin(true);
@@ -328,6 +339,8 @@ const LongevityGame = ({ isSimulator = false }) => {
       if (error.code !== 'auth/popup-closed-by-user') {
         showMessage("Errore durante l'accesso con Google.", "error");
       }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -351,9 +364,10 @@ const LongevityGame = ({ isSimulator = false }) => {
       try {
         const parsedConfig = JSON.parse(event.target.result);
         if (parsedConfig['0-25'] && parsedConfig['70+']) {
+          if (!window.confirm("Sostituire la configurazione prodotti attuale? Questa operazione sovrascriverà i prodotti della stanza in corso.")) return;
           setAppConfig(parsedConfig);
           if (gameId) {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+            const docRef = gameDocRef(gameId);
             await updateDoc(docRef, { config: parsedConfig });
           }
           showMessage("Nuova configurazione caricata con successo!", "success");
@@ -385,7 +399,7 @@ const LongevityGame = ({ isSimulator = false }) => {
     const newCode = `${safeRoomName}-${timeString}`;
 
     try {
-      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', newCode), {
+      await setDoc(gameDocRef(newCode), {
         createdAt: Date.now(),
         status: 'active',
         marketName: roomNameInput.trim().toUpperCase(),
@@ -404,7 +418,7 @@ const LongevityGame = ({ isSimulator = false }) => {
 
   const deleteGameRoom = async (idToDel) => {
     try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', idToDel));
+      await deleteDoc(gameDocRef(idToDel));
       if (idToDel === gameId) setView('admin_lobby');
       showMessage("Aula eliminata.", "info");
     } catch(e) {
@@ -415,7 +429,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   const kickTeamFromRoom = async (ageBracket) => {
     if(!window.confirm("Sicuro di voler liberare questa fascia d'età? I dati andranno persi.")) return;
     try {
-       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+       const docRef = gameDocRef(gameId);
        await updateDoc(docRef, {
          [`teams.${ageBracket}`]: deleteField()
        });
@@ -444,7 +458,7 @@ const LongevityGame = ({ isSimulator = false }) => {
     }
 
     try {
-       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+       const docRef = gameDocRef(gameId);
        await updateDoc(docRef, {
           [`teams.${editingTeam.ageBracket}`]: {
              groupName: editingTeam.groupName,
@@ -583,7 +597,7 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
            updates[`teams.${ev.ageBracket}.totalScore`] = currentScore + ev.score;
         });
 
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
+        const docRef = gameDocRef(gameId);
         await updateDoc(docRef, updates);
         
         showMessage("Evento generato e punteggi aggiornati!", "success");
@@ -885,10 +899,11 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
             
             <button 
               onClick={handleAdminGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 hover:border-teal-500 p-4 rounded-xl mb-4 font-bold text-slate-700 transition-all shadow-sm hover:shadow-md"
+              disabled={isLoggingIn}
+              className={`w-full flex items-center justify-center gap-3 border-2 p-4 rounded-xl mb-4 font-bold transition-all shadow-sm ${isLoggingIn ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-teal-500 text-slate-700 hover:shadow-md'}`}
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-              Accedi con Google
+              {isLoggingIn ? 'Accesso in corso...' : 'Accedi con Google'}
             </button>
 
             <button onClick={() => setShowAdminLogin(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">Annulla</button>
@@ -932,11 +947,12 @@ Sii spietato ma oggettivo. Assegna un punteggio numerico da 1 a 10 per ogni team
               onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom(joinCodeInput)}
             />
-            <button 
+            <button
               onClick={() => handleJoinRoom(joinCodeInput)}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg p-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1"
+              disabled={isJoining}
+              className={`w-full text-white font-bold text-lg p-4 rounded-xl shadow-lg transition-all transform ${isJoining ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 hover:-translate-y-1'}`}
             >
-              Entra 🚀
+              {isJoining ? 'Connessione...' : 'Entra 🚀'}
             </button>
          </main>
       )}
