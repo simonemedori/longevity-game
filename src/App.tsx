@@ -486,6 +486,11 @@ const LongevityGame = ({ isSimulator = false }) => {
   };
 
   const deleteGameRoom = async (idToDel) => {
+    const confirm = window.prompt(`Per eliminare l'aula digita il codice: ${idToDel}`);
+    if (confirm?.trim().toUpperCase() !== idToDel) {
+      if (confirm !== null) showMessage("Codice errato. Aula non eliminata.", "error");
+      return;
+    }
     try {
       await deleteDoc(gameDocRef(idToDel));
       if (idToDel === gameId) setView(VIEWS.ADMIN_LOBBY);
@@ -990,22 +995,36 @@ STILE — TASSATIVO:
       )}
 
       {/* HEADER GLOBALE */}
-      <header className={`max-w-5xl w-full text-center bg-white rounded-3xl shadow-sm border-t-8 border-[#004F9F] relative ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
-        {isAdmin && !isSimulator && (
-          <button 
-            onClick={handleLogout}
-            className="absolute top-4 right-4 bg-slate-100 hover:bg-[#FAD5DE] text-slate-400 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-          >
-            Esci 🚪
-          </button>
-        )}
-        <h1 
-          className={`font-black text-[#001C4B] tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-[#004F9F]'}`}
+      <header className={`max-w-6xl w-full bg-white rounded-3xl shadow-sm border-t-8 border-[#004F9F] flex items-center justify-between overflow-hidden ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
+        {/* Spazio sinistro bilanciamento */}
+        <div className="w-24 flex-shrink-0" />
+        <h1
+          className={`flex-1 text-center font-black text-[#001C4B] tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-[#004F9F]'}`}
           onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView(VIEWS.ADMIN_LOBBY); } }}
           title={!isSimulator ? (isAdmin ? "Vai alla Lobby Admin" : "Clicca per Accesso Regia") : ""}
         >
           Longevity Game
         </h1>
+        <div className="w-24 flex-shrink-0 flex flex-col gap-2 items-end">
+          {isAdmin && !isSimulator && (
+            <>
+              {view === VIEWS.ADMIN_ROOM && (
+                <button
+                  onClick={() => setView(VIEWS.ADMIN_LOBBY)}
+                  className="bg-slate-100 hover:bg-[#CCD9EA] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
+                >
+                  🏛️ Lobby
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="bg-slate-100 hover:bg-[#FAD5DE] text-slate-500 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
+              >
+                🚪 Esci
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
       {/* VISTA 0: INSERIMENTO CODICE AULA */}
@@ -1366,10 +1385,6 @@ STILE — TASSATIVO:
       {view === VIEWS.ADMIN_ROOM && isAdmin && gameData && !isSimulator && (
         <main className="w-full max-w-6xl animate-fade-in-up pb-12">
           
-          <button onClick={() => setView(VIEWS.ADMIN_LOBBY)} className="text-slate-500 font-bold hover:text-slate-800 flex items-center gap-1 mb-4 px-2">
-             <span>←</span> Torna alla Lobby
-          </button>
-
           <div className="bg-slate-800 text-white p-6 md:p-8 rounded-3xl shadow-2xl mb-8 border-4 border-[#004F9F] flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center">
             
             {/* QR CODE QUADRATO E FORZATO */}
@@ -1535,7 +1550,7 @@ STILE — TASSATIVO:
 // ==========================================
 const App = () => {
   return (
-    <div className="relative min-h-screen bg-slate-100">
+    <div className="relative min-h-screen bg-[#CCD9EA]">
       <LongevityGame />
     </div>
   );
