@@ -678,7 +678,7 @@ STILE — TASSATIVO:
 
     const fetchWithRetry = async (retries = 5, delay = 1000) => {
       // Usiamo la Netlify Function come scudo per la sicurezza
-      const functionUrl = '/.netlify/functions/generate-event';
+      const functionUrl = import.meta.env.VITE_AI_FUNCTION_URL || '/.netlify/functions/generate-event';
       
       for (let i = 0; i < retries; i++) {
         try {
