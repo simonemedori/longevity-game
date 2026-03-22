@@ -125,17 +125,14 @@ const LongevityGame = ({ isSimulator = false }) => {
       setUser(currentUser);
       
       if (currentUser && currentUser.email) {
-        // Controllo White List su Firestore nel percorso corretto
         try {
           const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'admins', currentUser.email.toLowerCase()));
           if (adminDoc.exists()) {
             setIsAdmin(true);
-            if (view === 'join' && !isSimulator) setView('admin_lobby');
           } else {
             setIsAdmin(false);
           }
         } catch (e) {
-          console.error("Errore verifica admin:", e);
           setIsAdmin(false);
         }
       } else {
@@ -143,7 +140,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       }
     });
     return () => unsubscribe();
-  }, [view, isSimulator]);
+  }, []);
 
   // --- LISTENER PER LA STANZA SPECIFICA ---
   useEffect(() => {
@@ -301,10 +298,12 @@ const LongevityGame = ({ isSimulator = false }) => {
   // --- LOGICHE ADMIN ---
   const handleAdminGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    // Rimossa la forzatura del select_account che può causare blocchi in alcuni browser
+    
     try {
       const result = await signInWithPopup(auth, provider);
       const email = result.user.email?.toLowerCase();
-      if (!email) return;
+      if (!email) throw new Error("Email non trovata");
 
       // Verifica immediata su Firestore nel percorso corretto
       const adminDoc = await getDoc(doc(db, 'artifacts', appId, 'admins', email));
@@ -317,11 +316,15 @@ const LongevityGame = ({ isSimulator = false }) => {
       } else {
         await signOut(auth);
         await signInAnonymously(auth);
-        showMessage("Accesso negato: email non presente nella lista istruttori.", "error");
+        setIsAdmin(false);
+        showMessage("Accesso negato: questa email non è autorizzata.", "error");
       }
     } catch (error) {
       console.error("Google Login Error:", error);
-      showMessage("Errore durante l'accesso con Google.", "error");
+      // Se l'utente chiude il popup, non mostriamo errori rossi inutili
+      if (error.code !== 'auth/popup-closed-by-user') {
+        showMessage("Errore durante l'accesso con Google.", "error");
+      }
     }
   };
 
