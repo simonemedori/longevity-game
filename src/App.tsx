@@ -192,7 +192,10 @@ const LongevityGame = ({ isSimulator = false }) => {
 
     const timeoutId = setTimeout(() => {
       const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
-      updateDoc(docRef, { [`teams.${selectedAge}.allocations`]: localAllocations }).catch(e => console.error(e));
+      updateDoc(docRef, { [`teams.${selectedAge}.allocations`]: localAllocations }).catch(e => {
+        console.error(e);
+        showMessage("Errore nel salvataggio automatico. Controlla la connessione.", "error");
+      });
     }, 1500);
 
     return () => clearTimeout(timeoutId);
