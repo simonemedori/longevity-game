@@ -1710,10 +1710,10 @@ STILE — TASSATIVO:
               {/* Bottoni Azione Sotto al Link */}
               <div className="mb-3">
                 {(() => {
-                  const activeBrackets = Object.keys(activePortfolios).filter(b => gameData?.teams?.[b]);
+                  const sortedBrackets = Object.keys(activePortfolios).sort((a, b) => parseInt(a) - parseInt(b));
                   const eventCount = gameData?.events?.length || 0;
-                  const hintTeam = activeBrackets.length > 0
-                    ? activeBrackets[eventCount % activeBrackets.length]
+                  const hintTeam = sortedBrackets.length > 0
+                    ? sortedBrackets[eventCount % sortedBrackets.length]
                     : null;
                   return hintTeam ? (
                     <p className="mb-2">
