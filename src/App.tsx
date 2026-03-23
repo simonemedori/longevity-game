@@ -981,7 +981,7 @@ STILE — TASSATIVO:
                 const isBad = evalItem.score < 5;
                 return (
                   <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 w-2 h-full ${isGood ? 'bg-[#D8F0F1]0' : isBad ? 'bg-[#FAD5DE]0' : 'bg-[#F07D00]'}`}></div>
+                    <div className={`absolute top-0 left-0 w-2 h-full ${isGood ? 'bg-[#39B2B6]' : isBad ? 'bg-[#E6325E]' : 'bg-[#F07D00]'}`}></div>
                     <div className="pl-3 flex justify-between items-start mb-2">
                       <div>
                         <h5 className="font-bold text-slate-800">{evalItem.teamName}</h5>
@@ -1009,7 +1009,7 @@ STILE — TASSATIVO:
       
       {/* Toast Notification */}
       {notification.show && (
-        <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white transition-all transform animate-fade-in-down ${notification.type === 'error' ? 'bg-[#FAD5DE]0' : notification.type === 'success' ? 'bg-[#D8F0F1]0' : 'bg-[#004F9F]'}`}>
+        <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl font-bold text-white transition-all transform animate-fade-in-down ${notification.type === 'error' ? 'bg-[#E6325E]' : notification.type === 'success' ? 'bg-[#39B2B6]' : 'bg-[#004F9F]'}`}>
           {notification.message}
         </div>
       )}
@@ -1740,7 +1740,7 @@ STILE — TASSATIVO:
                     </button>
                     <button 
                       onClick={() => deleteGameRoom(game.id)}
-                      className="w-14 bg-white border border-[#F5ABBD] text-[#E6325E] hover:bg-[#FAD5DE]0 hover:text-white rounded-xl font-bold transition-colors flex items-center justify-center"
+                      className="w-14 bg-white border border-[#F5ABBD] text-[#E6325E] hover:bg-[#E6325E] hover:text-white rounded-xl font-bold transition-colors flex items-center justify-center"
                     >
                       🗑️
                     </button>
@@ -1875,7 +1875,7 @@ STILE — TASSATIVO:
                              <button 
                                onClick={() => kickTeamFromRoom(ageBracket)}
                                title="Espelli squadra e libera la fascia"
-                               className="w-8 h-8 flex items-center justify-center bg-white text-[#E6325E] rounded-full shadow hover:bg-[#FAD5DE]0 hover:text-white transition-colors border border-[#FAD5DE]"
+                               className="w-8 h-8 flex items-center justify-center bg-white text-[#E6325E] rounded-full shadow hover:bg-[#E6325E] hover:text-white transition-colors border border-[#FAD5DE]"
                              >✕</button>
                           </>
                         ) : (
