@@ -41,7 +41,7 @@ const VIEWS = {
 } as const;
 type View = typeof VIEWS[keyof typeof VIEWS];
 
-const MAX_ROUNDS = 4;
+const MAX_ROUNDS = 5;
 
 const STATUS = {
   DRAFT: 'draft',
@@ -1710,11 +1710,19 @@ STILE — TASSATIVO:
               {/* Bottoni Azione Sotto al Link */}
               <div className="mb-3">
                 {(() => {
-                  const sortedBrackets = Object.keys(activePortfolios).sort((a, b) => parseInt(a) - parseInt(b));
                   const eventCount = gameData?.events?.length || 0;
-                  const hintTeam = sortedBrackets.length > 0
-                    ? sortedBrackets[eventCount % sortedBrackets.length]
-                    : null;
+                  const isFirstRound = eventCount === 0;
+                  if (isFirstRound) {
+                    return (
+                      <p className="mb-2">
+                        <span className="bg-[#F07D00] text-white text-xs font-bold px-3 py-1 rounded-full">
+                          ✨ Round 1 — la AI decide liberamente il destino dei portafogli
+                        </span>
+                      </p>
+                    );
+                  }
+                  const sortedBrackets = Object.keys(activePortfolios).sort((a, b) => parseInt(a) - parseInt(b));
+                  const hintTeam = sortedBrackets[(eventCount - 1) % sortedBrackets.length];
                   return hintTeam ? (
                     <p className="mb-2">
                       <span className="bg-[#F07D00] text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -1726,10 +1734,10 @@ STILE — TASSATIVO:
                 <textarea
                   value={aiHint}
                   onChange={(e) => setAiHint(e.target.value)}
-                  disabled={isGeneratingAI}
-                  placeholder="Scrivi qui il suggerimento del team di turno... (opzionale)"
+                  disabled={isGeneratingAI || (gameData?.events?.length || 0) === 0}
+                  placeholder={(gameData?.events?.length || 0) === 0 ? 'Round 1: nessun hint, la AI è libera di scegliere' : 'Scrivi qui il suggerimento del team di turno... (opzionale)'}
                   rows={2}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:border-[#6693BF] transition-colors"
+                  className={`w-full border rounded-xl p-3 text-sm placeholder-slate-400 resize-none focus:outline-none transition-colors ${(gameData?.events?.length || 0) === 0 ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-700 focus:border-[#6693BF]'}`}
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
