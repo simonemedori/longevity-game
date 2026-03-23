@@ -1757,7 +1757,10 @@ STILE — TASSATIVO:
           <Leaderboard />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Object.keys(activePortfolios).map(ageBracket => {
+            {[
+              ...rankedTeams.map(t => t.age),
+              ...Object.keys(activePortfolios).filter(age => !gameData.teams?.[age] || gameData.teams[age].status !== STATUS.SUBMITTED)
+            ].map(ageBracket => {
               const team = gameData.teams?.[ageBracket];
               const isOccupied = !!team;
               const isSubmitted = team?.status === STATUS.SUBMITTED;
