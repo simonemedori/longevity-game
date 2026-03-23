@@ -1744,7 +1744,7 @@ STILE — TASSATIVO:
                 <button
                   onClick={generateAIEvent}
                   disabled={isGeneratingAI || (gameData?.events?.length || 0) >= MAX_ROUNDS}
-                  className={`px-6 py-3 rounded-2xl font-black text-base shadow-lg transition-transform transform flex-1 text-center text-white ${isGeneratingAI || (gameData?.events?.length || 0) >= MAX_ROUNDS ? 'bg-[#6693BF] cursor-not-allowed' : 'bg-gradient-to-r from-[#1596C8] to-[#004F9F] hover:scale-105'}`}
+                  className={`px-6 py-3 rounded-2xl font-black text-base shadow-lg transition-opacity flex-1 text-center text-white ${isGeneratingAI || (gameData?.events?.length || 0) >= MAX_ROUNDS ? 'bg-[#6693BF] cursor-not-allowed' : 'bg-gradient-to-r from-[#1596C8] to-[#004F9F] hover:opacity-90'}`}
                 >
                   {isGeneratingAI
                     ? '✨ Elaborazione...'
