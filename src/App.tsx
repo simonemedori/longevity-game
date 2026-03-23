@@ -172,6 +172,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   const [localAllocations, setLocalAllocations] = useState({});
   const [activeTab, setActiveTab] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [isTeamMember, setIsTeamMember] = useState(false);
   
   // Stati Admin
   const [isAdmin, setIsAdmin] = useState(false);
@@ -311,6 +312,7 @@ const LongevityGame = ({ isSimulator = false }) => {
         const config = data.config || appConfig;
         const allBracketsFull = Object.keys(config).every(b => data.teams?.[b]);
         setGameId(upperCode);
+        setIsTeamMember(false);
         if (allBracketsFull) {
           setGameData(data);
           setView(VIEWS.SPECTATOR);
@@ -376,6 +378,17 @@ const LongevityGame = ({ isSimulator = false }) => {
       showMessage("Fascia d'età appena occupata da un altro gruppo!", "error");
       return;
     }
+
+    const nameConflict = gameData?.teams
+      ? Object.entries(gameData.teams).find(([bracket, team]: [string, any]) =>
+          bracket !== selectedAge &&
+          team.groupName?.toLowerCase().trim() === groupName.toLowerCase().trim()
+        )
+      : null;
+    if (nameConflict) {
+      showMessage(`Nome già usato da un altro gruppo. Scegli un nome diverso o entra come membro.`, "error");
+      return;
+    }
     
     try {
       const initialAlloc = {};
@@ -397,6 +410,13 @@ const LongevityGame = ({ isSimulator = false }) => {
     } catch (error) {
       showMessage("Errore di connessione. Riprova.", "error");
     }
+  };
+
+  const handleJoinAsTeamMember = (age: string) => {
+    setSelectedAge(age);
+    setIsTeamMember(true);
+    setActiveTab(age);
+    setView(VIEWS.PLAY);
   };
 
   const handleInputChange = (productId, value) => {
@@ -457,6 +477,15 @@ const LongevityGame = ({ isSimulator = false }) => {
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  const handleLeaveRoom = () => {
+    setGameId('');
+    setGameData(null);
+    setGroupName('');
+    setSelectedAge('');
+    setIsTeamMember(false);
+    setView(VIEWS.JOIN);
   };
 
   const handleLogout = async () => {
@@ -1089,52 +1118,56 @@ STILE — TASSATIVO:
       )}
 
       {/* HEADER GLOBALE */}
-      <header className={`max-w-6xl w-full bg-[#C19135] rounded-3xl shadow-sm border-t-8 border-[#004F9F] flex items-center justify-between overflow-hidden ${isSimulator ? 'p-4 mb-4' : 'p-6 md:p-8 mb-8'}`}>
-        {/* Spazio sinistro bilanciamento */}
-        <div className="w-24 flex-shrink-0" />
-        <h1
-          className={`flex-1 text-center font-black text-[#001C4B] tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-[#004F9F]'}`}
-          onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView(VIEWS.ADMIN_LOBBY); } }}
-          title={!isSimulator ? (isAdmin ? "Vai alla Lobby Admin" : "Clicca per Accesso Regia") : ""}
-        >
-          Longevity Game
-        </h1>
-        <div className="w-24 flex-shrink-0 flex flex-col gap-2 items-end">
-          {isAdmin && !isSimulator && (
-            <>
-              {view === VIEWS.ADMIN_ROOM && (
-                <button
-                  onClick={() => setView(VIEWS.ADMIN_LOBBY)}
-                  className="bg-slate-100 hover:bg-[#CCD9EA] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
-                >
-                  🏛️ Lobby
-                </button>
-              )}
-              {view !== VIEWS.GLOBAL_LEADERBOARD && (
-                <button
-                  onClick={() => { setPrevView(view); setView(VIEWS.GLOBAL_LEADERBOARD); }}
-                  className="bg-slate-100 hover:bg-[#EBF4FB] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
-                >
-                  🌍 Globale
-                </button>
-              )}
+      <header className={`max-w-6xl w-full bg-white rounded-3xl shadow-sm border-t-8 border-[#004F9F] overflow-hidden ${isSimulator ? 'mb-4' : 'mb-8'}`}>
+        {/* Titolo */}
+        <div className={isSimulator ? 'p-4 text-center' : 'p-6 md:p-8 text-center'}>
+          <h1
+            className={`font-black text-[#001C4B] tracking-tight transition-colors ${isSimulator ? 'text-2xl cursor-default' : 'text-4xl md:text-5xl cursor-pointer hover:text-[#004F9F]'}`}
+            onClick={() => { if(!isSimulator) { if(!isAdmin) setShowAdminLogin(true); else setView(VIEWS.ADMIN_LOBBY); } }}
+            title={!isSimulator ? (isAdmin ? "Vai alla Lobby Admin" : "Clicca per Accesso Regia") : ""}
+          >
+            Longevity Game
+          </h1>
+        </div>
+
+        {/* Barra bottoni — solo fuori dal simulatore e quando ci sono azioni disponibili */}
+        {!isSimulator && user && (isAdmin || gameId) && (
+          <div className="border-t border-slate-100 px-6 md:px-8 py-2 flex justify-end items-center gap-2">
+            {isAdmin && view === VIEWS.ADMIN_ROOM && (
+              <button
+                onClick={() => setView(VIEWS.ADMIN_LOBBY)}
+                className="bg-slate-100 hover:bg-[#CCD9EA] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                🏛️ Lobby
+              </button>
+            )}
+            {view !== VIEWS.GLOBAL_LEADERBOARD && (
+              <button
+                onClick={() => { setPrevView(view); setView(VIEWS.GLOBAL_LEADERBOARD); }}
+                className="bg-slate-100 hover:bg-[#EBF4FB] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                🌍 Globale
+              </button>
+            )}
+            {isAdmin ? (
               <button
                 onClick={handleLogout}
-                className="bg-slate-100 hover:bg-[#FAD5DE] text-slate-500 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
+                className="bg-slate-100 hover:bg-[#FAD5DE] text-slate-500 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
               >
                 🚪 Esci
               </button>
-            </>
-          )}
-          {!isAdmin && !isSimulator && gameId && view !== VIEWS.GLOBAL_LEADERBOARD && (
-            <button
-              onClick={() => { setPrevView(view); setView(VIEWS.GLOBAL_LEADERBOARD); }}
-              className="bg-slate-100 hover:bg-[#EBF4FB] text-slate-500 hover:text-[#004F9F] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 w-full justify-center"
-            >
-              🌍 Globale
-            </button>
-          )}
-        </div>
+            ) : (
+              gameId && (
+                <button
+                  onClick={handleLeaveRoom}
+                  className="bg-slate-100 hover:bg-[#FAD5DE] text-slate-500 hover:text-[#E6325E] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+                >
+                  🚪 Esci
+                </button>
+              )
+            )}
+          </div>
+        )}
       </header>
 
       {/* VISTA 0: INSERIMENTO CODICE AULA */}
@@ -1183,57 +1216,90 @@ STILE — TASSATIVO:
           <div className="p-6 md:p-8">
             <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">Configura la Squadra</h2>
             
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-2">Nome del Team</label>
-                <input 
-                  type="text" 
-                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-lg font-bold text-slate-800 focus:border-[#004F9F] outline-none"
-                  placeholder="es. Lupi di Wall Street"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                />
-              </div>
+            {(() => {
+              const matchEntry = gameData?.teams
+                ? Object.entries(gameData.teams).find(([_, team]: [string, any]) =>
+                    team.groupName?.toLowerCase().trim() === groupName.toLowerCase().trim() &&
+                    groupName.trim().length >= 2
+                  )
+                : null;
+              const matchedAge = matchEntry?.[0];
+              const matchedTeamData = matchEntry?.[1] as any;
 
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-2">Cliente Assegnato</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {Object.keys(activePortfolios).map(age => {
-                    const occupyingTeam = gameData?.teams?.[age];
-                    const isOccupied = !!occupyingTeam;
+              return (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-600 mb-2">Nome del Team</label>
+                    <input
+                      type="text"
+                      className={`w-full bg-slate-50 border-2 rounded-xl p-3 text-lg font-bold text-slate-800 outline-none transition-colors ${matchedAge ? 'border-[#39B2B6] focus:border-[#39B2B6]' : 'border-slate-200 focus:border-[#004F9F]'}`}
+                      placeholder="es. Lupi di Wall Street"
+                      value={groupName}
+                      onChange={(e) => setGroupName(e.target.value)}
+                    />
+                  </div>
 
-                    return (
+                  {matchedAge ? (
+                    <>
+                      <div className="bg-[#D8F0F1] border border-[#88D0D2] rounded-xl p-4 flex items-center gap-3">
+                        <span className="text-2xl">👥</span>
+                        <div>
+                          <p className="font-black text-[#1D7A7D] text-sm">Gruppo trovato!</p>
+                          <p className="text-xs text-[#2A8A8D] font-medium">
+                            <strong>{matchedTeamData.groupName}</strong> — fascia {matchedAge} anni
+                          </p>
+                        </div>
+                      </div>
                       <button
-                        key={age}
-                        onClick={() => setSelectedAge(age)}
-                        disabled={isOccupied}
-                        className={`p-3 rounded-xl border-2 font-black transition-all flex flex-col items-center justify-center gap-1 ${
-                          isOccupied 
-                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                            : selectedAge === age 
-                              ? 'border-[#004F9F] bg-[#EBF4FB] text-[#003063] shadow-inner' 
-                              : 'border-slate-200 bg-white text-slate-500 hover:border-[#6693BF] hover:bg-slate-50'
-                        }`}
+                        onClick={() => handleJoinAsTeamMember(matchedAge)}
+                        className="w-full bg-[#39B2B6] hover:bg-[#2A8A8D] text-white font-bold text-lg p-4 rounded-xl shadow-lg transition-colors"
                       >
-                        <span className="text-sm">{age} anni</span>
-                        {isOccupied && (
-                          <span className="text-[10px] font-bold text-[#E6325E] truncate w-full text-center">
-                            {occupyingTeam.groupName}
-                          </span>
-                        )}
+                        Entra come membro 👥
                       </button>
-                    );
-                  })}
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-600 mb-2">Cliente Assegnato</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {Object.keys(activePortfolios).map(age => {
+                            const occupyingTeam = gameData?.teams?.[age];
+                            const isOccupied = !!occupyingTeam;
+                            return (
+                              <button
+                                key={age}
+                                onClick={() => setSelectedAge(age)}
+                                disabled={isOccupied}
+                                className={`p-3 rounded-xl border-2 font-black transition-all flex flex-col items-center justify-center gap-1 ${
+                                  isOccupied
+                                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                    : selectedAge === age
+                                      ? 'border-[#004F9F] bg-[#EBF4FB] text-[#003063] shadow-inner'
+                                      : 'border-slate-200 bg-white text-slate-500 hover:border-[#6693BF] hover:bg-slate-50'
+                                }`}
+                              >
+                                <span className="text-sm">{age} anni</span>
+                                {isOccupied && (
+                                  <span className="text-[10px] font-bold text-[#E6325E] truncate w-full text-center">
+                                    {occupyingTeam.groupName}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleStartPlay}
+                        className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg p-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1"
+                      >
+                        Inizia Allocazione 🚀
+                      </button>
+                    </>
+                  )}
                 </div>
-              </div>
-
-              <button 
-                onClick={handleStartPlay}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg p-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1"
-              >
-                Inizia Allocazione 🚀
-              </button>
-            </div>
+              );
+            })()}
           </div>
         </main>
       )}
@@ -1323,7 +1389,7 @@ STILE — TASSATIVO:
                         ? localAllocations[prod.id] 
                         : (spiedTeam?.allocations?.[prod.id] || '');
                       
-                      const isDisabled = !isMyTab || isMyTeamLocked;
+                      const isDisabled = !isMyTab || isMyTeamLocked || isTeamMember;
 
                       return (
                         <div key={prod.id} className={`flex items-center p-3 rounded-xl border-2 transition-all ${
@@ -1365,36 +1431,45 @@ STILE — TASSATIVO:
                   </div>
 
                   {isMyTab && (
-                    <div className={`p-5 transition-colors duration-500 ${isMyTeamLocked ? 'bg-[#D8F0F1]' : isPerfect ? 'bg-[#EBF4FB]' : 'bg-white border-t border-slate-100'}`}>
-                      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="text-center md:text-left">
-                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Il tuo Totale</p>
-                          <h3 className={`text-3xl font-black ${isMyTeamLocked ? 'text-[#39B2B6]' : isPerfect ? 'text-[#004F9F]' : currentTotal > 100 ? 'text-[#E6325E]' : 'text-slate-800'}`}>
-                            {currentTotal}%
-                          </h3>
+                    isTeamMember ? (
+                      <div className="p-5 bg-[#EBF4FB] border-t border-[#CCD9EA] flex items-center gap-3">
+                        <span className="text-2xl">👥</span>
+                        <div>
+                          <p className="font-black text-[#003063] text-sm">Modalità membro</p>
+                          <p className="text-xs text-slate-500">Solo il capogruppo può modificare e confermare l'allocazione</p>
                         </div>
-                        
-                        {!isMyTeamLocked && (
-                          <button 
-                            onClick={handleSubmitToCloud}
-                            disabled={!isPerfect}
-                            className={`w-full md:w-auto px-6 py-3 rounded-xl font-black text-base shadow-lg transition-all transform ${
-                              isPerfect 
-                                ? 'bg-[#004F9F] hover:bg-[#EBF4FB]0 text-white hover:-translate-y-1' 
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            }`}
-                          >
-                            {isPerfect ? 'Conferma Definitiva' : `Mancano ${100 - currentTotal}%`}
-                          </button>
-                        )}
-                        {isMyTeamLocked && (
-                          <div className="text-[#2A8A8D] font-bold text-center md:text-right leading-tight">
-                            <span className="block text-xl mb-1">✅</span>
-                            Consegna Registrata.
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    ) : (
+                      <div className={`p-5 transition-colors duration-500 ${isMyTeamLocked ? 'bg-[#D8F0F1]' : isPerfect ? 'bg-[#EBF4FB]' : 'bg-white border-t border-slate-100'}`}>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                          <div className="text-center md:text-left">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-0.5">Il tuo Totale</p>
+                            <h3 className={`text-3xl font-black ${isMyTeamLocked ? 'text-[#39B2B6]' : isPerfect ? 'text-[#004F9F]' : currentTotal > 100 ? 'text-[#E6325E]' : 'text-slate-800'}`}>
+                              {currentTotal}%
+                            </h3>
+                          </div>
+                          {!isMyTeamLocked && (
+                            <button
+                              onClick={handleSubmitToCloud}
+                              disabled={!isPerfect}
+                              className={`w-full md:w-auto px-6 py-3 rounded-xl font-black text-base shadow-lg transition-all transform ${
+                                isPerfect
+                                  ? 'bg-[#004F9F] hover:bg-[#EBF4FB]0 text-white hover:-translate-y-1'
+                                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                              }`}
+                            >
+                              {isPerfect ? 'Conferma Definitiva' : `Mancano ${100 - currentTotal}%`}
+                            </button>
+                          )}
+                          {isMyTeamLocked && (
+                            <div className="text-[#2A8A8D] font-bold text-center md:text-right leading-tight">
+                              <span className="block text-xl mb-1">✅</span>
+                              Consegna Registrata.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
                   )}
                 </div>
               );
