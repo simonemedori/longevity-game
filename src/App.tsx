@@ -331,6 +331,16 @@ const LongevityGame = ({ isSimulator = false }) => {
     }
   };
 
+  const handleViewRoomFromLeaderboard = (roomId: string) => {
+    const roomData = allGames.find(g => g.id === roomId);
+    if (!roomData) return;
+    setGameId(roomId);
+    setGameData(roomData as any);
+    setIsTeamMember(false);
+    setPrevView(VIEWS.GLOBAL_LEADERBOARD);
+    setView(VIEWS.SPECTATOR);
+  };
+
   const handleViewGlobalLeaderboard = async (code: string) => {
     const upperCode = code.trim().toUpperCase();
     if (upperCode.length < 3) {
@@ -1597,7 +1607,7 @@ STILE — TASSATIVO:
                 ) : (
                   <div className="space-y-2">
                     {globalTeams.slice(0, 3).map((t, idx) => (
-                      <div key={`${t.roomId}-${t.age}`} className={`flex items-center gap-4 px-4 py-3 rounded-xl border ${idx === 0 ? 'bg-[#FCE5CC] border-[#F9CB99]' : 'bg-slate-50 border-slate-200'}`}>
+                      <button key={`${t.roomId}-${t.age}`} onClick={() => handleViewRoomFromLeaderboard(t.roomId)} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl border text-left transition-opacity hover:opacity-75 ${idx === 0 ? 'bg-[#FCE5CC] border-[#F9CB99]' : 'bg-slate-50 border-slate-200'}`}>
                         <span className={`text-lg font-black w-8 text-center flex-shrink-0 ${idx === 0 ? 'text-[#F07D00]' : 'text-slate-400'}`}>#{idx + 1}</span>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-slate-800 leading-tight truncate">{t.groupName}</div>
@@ -1610,8 +1620,9 @@ STILE — TASSATIVO:
                           <span className={`text-lg font-black ${idx === 0 ? 'text-[#F07D00]' : 'text-[#39B2B6]'}`}>
                             {t.totalScore} pt
                           </span>
+                          <span className="text-slate-400 text-xs">→</span>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -1636,7 +1647,7 @@ STILE — TASSATIVO:
                           </h4>
                           <div className="space-y-2">
                             {teams.slice(0, 3).map((t, idx) => (
-                              <div key={`${t.roomId}-${t.age}-${idx}`} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${idx === 0 ? 'bg-[#D8F0F1] border-[#88D0D2]' : 'bg-slate-50 border-slate-200'}`}>
+                              <button key={`${t.roomId}-${t.age}-${idx}`} onClick={() => handleViewRoomFromLeaderboard(t.roomId)} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-left transition-opacity hover:opacity-75 ${idx === 0 ? 'bg-[#D8F0F1] border-[#88D0D2]' : 'bg-slate-50 border-slate-200'}`}>
                                 <span className={`text-sm font-black w-6 text-center flex-shrink-0 ${idx === 0 ? 'text-[#1D7A7D]' : 'text-slate-400'}`}>#{idx + 1}</span>
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-slate-800 text-sm truncate">{t.groupName}</div>
@@ -1645,7 +1656,8 @@ STILE — TASSATIVO:
                                 <span className={`font-black text-sm flex-shrink-0 ${idx === 0 ? 'text-[#1D7A7D]' : 'text-[#39B2B6]'}`}>
                                   {t.totalScore} pt
                                 </span>
-                              </div>
+                                <span className="text-slate-400 text-xs flex-shrink-0">→</span>
+                              </button>
                             ))}
                           </div>
                         </div>
