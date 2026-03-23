@@ -1,6 +1,6 @@
 # Longevity Game — Simulatore Finanziario IA
 
-**Longevity Game** è un'applicazione web multiplayer per la formazione di consulenti finanziari (Crédit Agricole / Amundi). I partecipanti, divisi in squadre per fascia d'età, allocano portafogli di investimento e affrontano imprevisti macroeconomici generati in tempo reale da un Game Master basato su intelligenza artificiale.
+**Longevity Game** è un'applicazione web multiplayer per la formazione di consulenti finanziari. I partecipanti, divisi in squadre per fascia d'età, allocano portafogli di investimento e affrontano imprevisti macroeconomici generati in tempo reale da un Game Master basato su intelligenza artificiale.
 
 ---
 
