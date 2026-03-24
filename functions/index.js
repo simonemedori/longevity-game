@@ -5,6 +5,7 @@ const https = require('https');
 
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const MAX_BODY_SIZE = 50 * 1024; // 50KB
+const ALLOWED_ORIGIN = 'https://longevitygame.it';
 
 exports.generateEvent = onRequest(
   {
@@ -13,10 +14,14 @@ exports.generateEvent = onRequest(
     region: 'us-central1'
   },
   (req, res) => {
+    const origin = req.headers['origin'] || '';
+    const originAllowed = origin === ALLOWED_ORIGIN;
 
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (originAllowed) {
+      res.set('Access-Control-Allow-Origin', origin);
+      res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+    }
 
     if (req.method === 'OPTIONS') {
       return res.status(200).end();
@@ -24,6 +29,15 @@ exports.generateEvent = onRequest(
 
     if (req.method !== 'POST') {
       return res.status(405).end('Method Not Allowed');
+    }
+
+    if (!originAllowed) {
+      return res.status(403).json({ error: 'Origine non autorizzata' });
+    }
+
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body) ||
+        !Array.isArray(req.body.contents) || req.body.contents.length === 0) {
+      return res.status(400).json({ error: 'Payload non valido' });
     }
 
     const body = JSON.stringify(req.body);
