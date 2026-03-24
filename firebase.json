@@ -26,5 +26,8 @@
   "functions": {
     "source": "functions",
     "runtime": "nodejs22"
+  },
+  "firestore": {
+    "rules": "firestore_rules.txt"
   }
 }
