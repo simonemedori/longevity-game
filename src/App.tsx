@@ -1925,7 +1925,7 @@ STILE — TASSATIVO:
                   return hintTeam ? (
                     <p className="mb-2">
                       <span className="bg-[#F07D00] text-white text-xs font-bold px-3 py-1 rounded-full">
-                        🎯 Turno della fascia {hintTeam} anni — chiedi a loro l'hint!
+                        🎯 Turno {gameData?.teams?.[hintTeam]?.groupName || `fascia ${hintTeam} anni`}
                       </span>
                     </p>
                   ) : null;
