@@ -27,9 +27,9 @@ Questa sezione descrive il flusso completo di una sessione tipo, dalla preparazi
 ### Fase 1 — Preparazione (istruttore)
 
 1. **Accedi** all'app con il tuo account Google tramite il pulsante di login admin
-2. **Crea l'aula**: inserisci il nome del mercato (es. "Mercato Europeo 2024") e un codice aula breve e memorabile (es. `AMUNDI01`) — il codice è quello che proietterai ai partecipanti
+2. **Crea l'aula**: inserisci un nome breve (es. `MILANO`) — il sistema genera automaticamente un codice univoco nel formato `NOMEAULA-DDMM-HHMM` (es. `MILANO-2403-1430`)
 3. **Opzionale**: importa una configurazione JSON personalizzata dei prodotti finanziari se vuoi usare un set diverso da quello di default
-4. **Proietta il codice aula** e chiedi ai partecipanti di aprire l'app
+4. **Proietta il codice aula** generato e chiedi ai partecipanti di aprire l'app e inserirlo
 
 ---
 
@@ -43,38 +43,40 @@ Questa sezione descrive il flusso completo di una sessione tipo, dalla preparazi
 
 ---
 
-### Fase 3 — Allocazione portafoglio (round)
+### Fase 3 — Allocazione portafoglio (unica)
 
 8. Ogni team **distribuisce il 100%** del patrimonio tra i prodotti disponibili per la propria fascia d'età
-9. Quando soddisfatti dell'allocazione, cliccano **Conferma Definitiva** — da quel momento il portafoglio è bloccato per quel round
+9. Quando soddisfatti, cliccano **Conferma Definitiva** — il portafoglio è bloccato per **tutta la sessione** e non può più essere modificato
 10. L'istruttore dal pannello admin vede in tempo reale lo stato di ogni team (in corso / consegnato)
-11. Se necessario, l'istruttore può **forzare la consegna** di un team in ritardo o **resettare** un'allocazione
+11. Se necessario, l'istruttore può **forzare la consegna** di un team in ritardo
 
-> 💡 Il team che ha il turno dell'**hint** può suggerire uno scenario all'IA (es. "crisi del debito sovrano") per mettere in difficoltà gli avversari.
+> ⚠️ La scelta del portafoglio è definitiva: la strategia vincente è costruire un'allocazione che sappia resistere a scenari macroeconomici avversi e imprevedibili.
 
 ---
 
-### Fase 4 — Generazione imprevisto AI
+### Fase 4 — I 5 imprevisti AI
 
-12. Quando tutti (o la maggioranza) dei team hanno consegnato, l'istruttore clicca **Genera imprevisto**
-13. Il **Game Master IA** (Gemini 2.5 Flash) analizza i portafogli consegnati, crea uno scenario macroeconomico realistico, valuta ogni portafoglio e assegna un punteggio con feedback tecnico
+La sessione prevede **5 imprevisti** in sequenza. Il portafoglio rimane invariato per tutti e 5.
+
+12. **Imprevisto 1 (neutro)**: l'istruttore clicca **Genera imprevisto** senza alcun hint — l'IA crea liberamente uno scenario macroeconomico, valuta tutti i portafogli e assegna i punteggi
+13. **Imprevisti 2-5 (hint a rotazione)**: ogni round, un team a turno può **suggerire uno scenario** all'IA (es. "forte rialzo dei tassi", "crisi energetica") cercando di favorire il proprio portafoglio e danneggiare gli avversari — l'IA tiene conto del suggerimento ma mantiene coerenza macroeconomica
 14. L'imprevisto e i punteggi appaiono in tempo reale per tutti — partecipanti, spettatori e classifica globale
-15. Il contatore round si aggiorna (es. `1/4`) — al raggiungimento del limite il pulsante AI si blocca automaticamente
+15. Il contatore si aggiorna (es. `3/5`) — al 5° imprevisto il pulsante AI si blocca automaticamente
 
 ---
 
-### Fase 5 — Round successivi
+### Fase 5 — Classifica finale
 
-16. I team **sbloccano** le loro allocazioni (o l'istruttore le resetta) e riallocano per il round successivo, tenendo conto dell'imprevisto appena ricevuto
-17. Si ripete dalla **Fase 3** per ogni nuovo round
+16. Al termine dei 5 imprevisti, la **classifica finale** riflette la somma dei punteggi ottenuti da ogni team nei singoli scenari
+17. Vince il team il cui portafoglio ha dimostrato la migliore resilienza complessiva
+18. Sia l'istruttore che i partecipanti possono consultare la **classifica globale** per verificare se il punteggio del proprio team costituisca un **record** — sia nella classifica assoluta (tutti i team di tutte le sessioni) che in quella **per fascia d'età** (confronto con i team della stessa fascia di sessioni precedenti)
 
 ---
 
 ### Fase 6 — Chiusura
 
-18. Al termine dei round, la **classifica finale** è visibile a tutti
-19. L'istruttore può **esportare i dati** (classifica e punteggi) in JSON per l'archiviazione o l'analisi post-sessione
-20. L'aula rimane visibile nella **classifica globale** per il confronto tra sessioni parallele o future
+18. L'istruttore può **esportare i dati** (classifica e punteggi) in JSON per l'archiviazione o l'analisi post-sessione
+19. L'aula rimane visibile nella **classifica globale** per il confronto tra sessioni parallele o future
 
 ---
 
