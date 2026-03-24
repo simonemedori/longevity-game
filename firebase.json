@@ -1,8 +1,14 @@
 {
   "hosting": {
-    "predeploy": ["npm run build:firebase"],
+    "predeploy": [
+      "npm run build:firebase"
+    ],
     "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
       {
         "source": "/generateEvent",
