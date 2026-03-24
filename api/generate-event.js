@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const origin = req.headers['origin'] || '';
 
   const setCors = () => {
-    const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] || '';
+    const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : '';
     res.setHeader('Access-Control-Allow-Origin', allowed);
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -30,6 +30,11 @@ export default async function handler(req, res) {
 
   if (ALLOWED_ORIGINS.length > 0 && !ALLOWED_ORIGINS.includes(origin)) {
     return res.status(403).json({ error: 'Origine non autorizzata' });
+  }
+
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body) ||
+      !Array.isArray(req.body.contents) || req.body.contents.length === 0) {
+    return res.status(400).json({ error: 'Payload non valido' });
   }
 
   const body = JSON.stringify(req.body);

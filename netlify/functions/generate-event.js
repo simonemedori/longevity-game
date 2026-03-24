@@ -12,7 +12,7 @@ export const handler = async (event) => {
   const origin = event.headers['origin'] || '';
 
   const corsHeaders = {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] || '',
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : '',
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "POST, OPTIONS"
   };
@@ -29,6 +29,18 @@ export const handler = async (event) => {
   // Blocca origini non autorizzate
   if (ALLOWED_ORIGINS.length > 0 && !ALLOWED_ORIGINS.includes(origin)) {
     return { statusCode: 403, body: JSON.stringify({ error: "Origine non autorizzata" }) };
+  }
+
+  // Valida struttura payload
+  let parsedBody;
+  try {
+    parsedBody = JSON.parse(event.body || '');
+  } catch {
+    return { statusCode: 400, body: JSON.stringify({ error: "Payload non valido" }) };
+  }
+  if (!parsedBody || typeof parsedBody !== 'object' || Array.isArray(parsedBody) ||
+      !Array.isArray(parsedBody.contents) || parsedBody.contents.length === 0) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Payload non valido" }) };
   }
 
   // Limita dimensione payload
