@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInAnonymously, 
-  onAuthStateChanged, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut 
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField, orderBy } from 'firebase/firestore';
 
@@ -177,6 +178,8 @@ const LongevityGame = ({ isSimulator = false }) => {
   // Stati Admin
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [roomNameInput, setRoomNameInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -487,6 +490,40 @@ const LongevityGame = ({ isSimulator = false }) => {
       // Se l'utente chiude il popup, non mostriamo errori rossi inutili
       if (error.code !== 'auth/popup-closed-by-user') {
         showMessage("Errore durante l'accesso con Google.", "error");
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleAdminEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminEmail.trim() || !adminPassword) return;
+    setIsLoggingIn(true);
+    try {
+      const result = await signInWithEmailAndPassword(auth, adminEmail.trim().toLowerCase(), adminPassword);
+      const email = result.user.email?.toLowerCase();
+      if (!email) throw new Error("Email non trovata");
+      const adminDoc = await getDoc(adminDocRef(email));
+      if (adminDoc.exists()) {
+        setIsAdmin(true);
+        setShowAdminLogin(false);
+        setAdminEmail('');
+        setAdminPassword('');
+        setView(VIEWS.ADMIN_LOBBY);
+        showMessage(`Benvenuto, ${email}`, "success");
+      } else {
+        await signOut(auth);
+        await signInAnonymously(auth);
+        setIsAdmin(false);
+        showMessage("Accesso negato: questa email non è autorizzata.", "error");
+      }
+    } catch (error: any) {
+      console.error("Email Login Error:", error);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        showMessage("Email o password non corretti.", "error");
+      } else {
+        showMessage("Errore durante l'accesso.", "error");
       }
     } finally {
       setIsLoggingIn(false);
@@ -1133,18 +1170,52 @@ STILE — TASSATIVO:
             <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center justify-center gap-2">
               <span>🔐</span> Regia Istruttore
             </h2>
-            <p className="text-slate-500 mb-8 text-sm">Accedi con il tuo account Google per gestire le aule.</p>
-            
-            <button 
+
+            {/* Form email/password */}
+            <form onSubmit={handleAdminEmailLogin} className="mb-4 text-left">
+              <input
+                type="email"
+                placeholder="Email"
+                value={adminEmail}
+                onChange={e => setAdminEmail(e.target.value)}
+                disabled={isLoggingIn}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-[#004F9F] disabled:bg-slate-50"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                disabled={isLoggingIn}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-[#004F9F] disabled:bg-slate-50"
+              />
+              <button
+                type="submit"
+                disabled={isLoggingIn || !adminEmail.trim() || !adminPassword}
+                className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${isLoggingIn || !adminEmail.trim() || !adminPassword ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[#004F9F] hover:bg-[#003063] text-white'}`}
+              >
+                {isLoggingIn ? 'Accesso in corso...' : 'Accedi'}
+              </button>
+            </form>
+
+            {/* Separatore */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="text-xs text-slate-400 font-medium">oppure</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+
+            {/* Google OAuth */}
+            <button
               onClick={handleAdminGoogleLogin}
               disabled={isLoggingIn}
-              className={`w-full flex items-center justify-center gap-3 border-2 p-4 rounded-xl mb-4 font-bold transition-all shadow-sm ${isLoggingIn ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-[#004F9F] text-slate-700 hover:shadow-md'}`}
+              className={`w-full flex items-center justify-center gap-3 border-2 p-3 rounded-xl mb-4 font-bold text-sm transition-all shadow-sm ${isLoggingIn ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-200 hover:border-[#004F9F] text-slate-700 hover:shadow-md'}`}
             >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-              {isLoggingIn ? 'Accesso in corso...' : 'Accedi con Google'}
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+              Accedi con Google
             </button>
 
-            <button onClick={() => setShowAdminLogin(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">Annulla</button>
+            <button onClick={() => { setShowAdminLogin(false); setAdminEmail(''); setAdminPassword(''); }} className="text-slate-400 hover:text-slate-600 font-bold text-sm">Annulla</button>
           </div>
         </div>
       )}
