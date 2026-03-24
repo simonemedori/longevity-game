@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut
 } from 'firebase/auth';
 import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField, orderBy } from 'firebase/firestore';
@@ -493,6 +494,19 @@ const LongevityGame = ({ isSimulator = false }) => {
       }
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!adminEmail.trim()) {
+      showMessage("Inserisci la tua email per ricevere il link di reset.", "error");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, adminEmail.trim().toLowerCase());
+      showMessage("Email di reset inviata! Controlla la casella di posta.", "success");
+    } catch {
+      showMessage("Errore nell'invio dell'email. Verifica che l'indirizzo sia corretto.", "error");
     }
   };
 
@@ -1189,6 +1203,11 @@ STILE — TASSATIVO:
                 disabled={isLoggingIn}
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-[#004F9F] disabled:bg-slate-50"
               />
+              <div className="text-right mb-3">
+                <button type="button" onClick={handlePasswordReset} className="text-xs text-[#004F9F] hover:underline">
+                  Password dimenticata?
+                </button>
+              </div>
               <button
                 type="submit"
                 disabled={isLoggingIn || !adminEmail.trim() || !adminPassword}
