@@ -267,7 +267,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   // --- AUTO-REDIRECT A SPECTATOR SE LA STANZA SI RIEMPIE IN SETUP ---
   useEffect(() => {
     if (view !== VIEWS.SETUP || !gameData || !activePortfolios) return;
-    const allBracketsFull = Object.keys(activePortfolios).every(b => gameData.teams?.[b]);
+    const allBracketsFull = Object.keys(activePortfolios).every(b => gameData.teams?.[b]?.status === STATUS.SUBMITTED);
     if (allBracketsFull) {
       setView(VIEWS.SPECTATOR);
       showMessage("Tutti i posti sono stati occupati — sei in modalità spettatore", 'info');
@@ -310,7 +310,7 @@ const LongevityGame = ({ isSimulator = false }) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const config = data.config || appConfig;
-        const allBracketsFull = Object.keys(config).every(b => data.teams?.[b]);
+        const allBracketsFull = Object.keys(config).every(b => data.teams?.[b]?.status === STATUS.SUBMITTED);
         setGameId(upperCode);
         setIsTeamMember(false);
         if (allBracketsFull) {
@@ -510,6 +510,24 @@ const LongevityGame = ({ isSimulator = false }) => {
     }
   };
 
+  const isValidPortfoliosConfig = (cfg: unknown): cfg is PortfoliosConfig => {
+    if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) return false;
+    const brackets = cfg as Record<string, unknown>;
+    if (Object.keys(brackets).length === 0) return false;
+    return Object.values(brackets).every(b => {
+      if (!b || typeof b !== 'object' || Array.isArray(b)) return false;
+      const bracket = b as Record<string, unknown>;
+      if (typeof bracket.title !== 'string' || typeof bracket.focus !== 'string') return false;
+      if (!Array.isArray(bracket.products) || bracket.products.length === 0) return false;
+      return (bracket.products as unknown[]).every(p => {
+        if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
+        const prod = p as Record<string, unknown>;
+        return typeof prod.id === 'string' && typeof prod.name === 'string' &&
+               typeof prod.desc === 'string' && prod.metrics !== null && typeof prod.metrics === 'object';
+      });
+    });
+  };
+
   const handleImportConfig = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -517,7 +535,7 @@ const LongevityGame = ({ isSimulator = false }) => {
     reader.onload = async (event) => {
       try {
         const parsedConfig = JSON.parse(event.target.result);
-        if (parsedConfig['0-25'] && parsedConfig['70+']) {
+        if (isValidPortfoliosConfig(parsedConfig)) {
           if (!window.confirm("Sostituire la configurazione prodotti attuale? Questa operazione sovrascriverà i prodotti della stanza in corso.")) return;
           setAppConfig(parsedConfig);
           if (gameId) {
@@ -526,7 +544,7 @@ const LongevityGame = ({ isSimulator = false }) => {
           }
           showMessage("Nuova configurazione caricata con successo!", "success");
         } else {
-          showMessage("Formato JSON non valido. Mancano le fasce d'età.", "error");
+          showMessage("Formato JSON non valido. Verificare che ogni fascia abbia title, focus e products con id, name, desc, metrics.", "error");
         }
       } catch (err) {
         showMessage("Errore nella lettura del file.", "error");
