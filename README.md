@@ -6,6 +6,7 @@
 
 ## 📋 Indice
 
+- [Flusso di una sessione](#-flusso-di-una-sessione)
 - [Per i partecipanti](#-per-i-partecipanti)
 - [Per l'istruttore](#-per-listruttore)
 - [Stack tecnologico](#-stack-tecnologico)
@@ -14,6 +15,66 @@
 - [Deploy](#-deploy)
 - [Variabili d'ambiente](#-variabili-dambiente)
 - [Firestore Security Rules](#-firestore-security-rules)
+
+---
+
+## 🔄 Flusso di una sessione
+
+Questa sezione descrive il flusso completo di una sessione tipo, dalla preparazione alla chiusura.
+
+---
+
+### Fase 1 — Preparazione (istruttore)
+
+1. **Accedi** all'app con il tuo account Google tramite il pulsante di login admin
+2. **Crea l'aula**: inserisci il nome del mercato (es. "Mercato Europeo 2024") e un codice aula breve e memorabile (es. `AMUNDI01`) — il codice è quello che proietterai ai partecipanti
+3. **Opzionale**: importa una configurazione JSON personalizzata dei prodotti finanziari se vuoi usare un set diverso da quello di default
+4. **Proietta il codice aula** e chiedi ai partecipanti di aprire l'app
+
+---
+
+### Fase 2 — Ingresso partecipanti
+
+5. Ogni squadra apre l'app, inserisce il **codice aula** e sceglie il **nome del team**
+6. Ogni squadra seleziona la propria **fascia d'età** (0-25 / 25-50 / 50-70 / 70+) — ogni fascia può essere occupata da un solo team
+7. Una volta che tutti i team sono entrati, l'istruttore può dare il via all'allocazione
+
+> 💡 Se tutti i posti sono già occupati, i nuovi ingressi finiscono automaticamente in **modalità spettatore**.
+
+---
+
+### Fase 3 — Allocazione portafoglio (round)
+
+8. Ogni team **distribuisce il 100%** del patrimonio tra i prodotti disponibili per la propria fascia d'età
+9. Quando soddisfatti dell'allocazione, cliccano **Conferma Definitiva** — da quel momento il portafoglio è bloccato per quel round
+10. L'istruttore dal pannello admin vede in tempo reale lo stato di ogni team (in corso / consegnato)
+11. Se necessario, l'istruttore può **forzare la consegna** di un team in ritardo o **resettare** un'allocazione
+
+> 💡 Il team che ha il turno dell'**hint** può suggerire uno scenario all'IA (es. "crisi del debito sovrano") per mettere in difficoltà gli avversari.
+
+---
+
+### Fase 4 — Generazione imprevisto AI
+
+12. Quando tutti (o la maggioranza) dei team hanno consegnato, l'istruttore clicca **Genera imprevisto**
+13. Il **Game Master IA** (Gemini 2.5 Flash) analizza i portafogli consegnati, crea uno scenario macroeconomico realistico, valuta ogni portafoglio e assegna un punteggio con feedback tecnico
+14. L'imprevisto e i punteggi appaiono in tempo reale per tutti — partecipanti, spettatori e classifica globale
+15. Il contatore round si aggiorna (es. `1/4`) — al raggiungimento del limite il pulsante AI si blocca automaticamente
+
+---
+
+### Fase 5 — Round successivi
+
+16. I team **sbloccano** le loro allocazioni (o l'istruttore le resetta) e riallocano per il round successivo, tenendo conto dell'imprevisto appena ricevuto
+17. Si ripete dalla **Fase 3** per ogni nuovo round
+
+---
+
+### Fase 6 — Chiusura
+
+18. Al termine dei round, la **classifica finale** è visibile a tutti
+19. L'istruttore può **esportare i dati** (classifica e punteggi) in JSON per l'archiviazione o l'analisi post-sessione
+20. L'aula rimane visibile nella **classifica globale** per il confronto tra sessioni parallele o future
 
 ---
 
