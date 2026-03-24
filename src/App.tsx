@@ -179,6 +179,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiHint, setAiHint] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -439,8 +440,9 @@ const LongevityGame = ({ isSimulator = false }) => {
   const isPerfect = currentTotal === 100;
 
   const handleSubmitToCloud = async () => {
-    if (!isPerfect || !user || !gameId) return;
+    if (!isPerfect || !user || !gameId || isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
       const docRef = gameDocRef(gameId);
       await updateDoc(docRef, {
@@ -450,6 +452,8 @@ const LongevityGame = ({ isSimulator = false }) => {
       showMessage("Portafoglio confermato! Il Game Master vi osserva.", "success");
     } catch (error) {
       showMessage("Errore durante la conferma definitiva.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -786,7 +790,7 @@ STILE — TASSATIVO:
       }
     } catch (error) {
       console.error("Errore Gemini:", error);
-      showMessage("Errore durante la connessione all'IA. Verifica le API key.", "error");
+      showMessage("Errore durante la generazione dell'imprevisto. Riprova tra qualche istante.", "error");
     } finally {
       setIsGeneratingAI(false);
     }
@@ -1479,14 +1483,14 @@ STILE — TASSATIVO:
                           {!isMyTeamLocked && (
                             <button
                               onClick={handleSubmitToCloud}
-                              disabled={!isPerfect}
+                              disabled={!isPerfect || isSubmitting}
                               className={`w-full md:w-auto px-6 py-3 rounded-xl font-black text-base shadow-lg transition-all transform ${
-                                isPerfect
+                                isPerfect && !isSubmitting
                                   ? 'bg-[#004F9F] hover:bg-[#EBF4FB]0 text-white hover:-translate-y-1'
                                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                               }`}
                             >
-                              {isPerfect ? 'Conferma Definitiva' : `Mancano ${100 - currentTotal}%`}
+                              {isSubmitting ? 'Conferma in corso...' : isPerfect ? 'Conferma Definitiva' : `Mancano ${100 - currentTotal}%`}
                             </button>
                           )}
                           {isMyTeamLocked && (
