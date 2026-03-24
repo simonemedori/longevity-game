@@ -8,7 +8,7 @@ import {
   signInWithPopup, 
   signOut 
 } from 'firebase/auth';
-import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField, limit } from 'firebase/firestore';
+import { getFirestore, collection, setDoc, updateDoc, onSnapshot, deleteDoc, doc, query, getDoc, deleteField, orderBy } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -249,7 +249,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   useEffect(() => {
     if (!user || (view !== VIEWS.ADMIN_LOBBY && view !== VIEWS.GLOBAL_LEADERBOARD)) return;
 
-    const q = query(gamesCol(), limit(50));
+    const q = query(gamesCol(), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
         const games = [];
