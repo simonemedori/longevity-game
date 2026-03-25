@@ -175,6 +175,7 @@ const LongevityGame = ({ isSimulator = false }) => {
   const [activeTab, setActiveTab] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [isTeamMember, setIsTeamMember] = useState(false);
+  const [showFullDisclaimer, setShowFullDisclaimer] = useState(false);
   
   // Stati Admin
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1335,6 +1336,36 @@ STILE — TASSATIVO:
               >
                 🌍 Vedi Classifica Globale
               </button>
+            </div>
+
+            {/* DISCLAIMER LEGALE */}
+            <div className="mt-6 pt-4 border-t border-slate-100 text-left">
+              <button
+                onClick={() => setShowFullDisclaimer(v => !v)}
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors w-full"
+              >
+                <span>⚖️</span>
+                <span>Disclaimer legale</span>
+                <span className="ml-auto">{showFullDisclaimer ? '▲' : '▼'}</span>
+              </button>
+
+              {!showFullDisclaimer && (
+                <p className="mt-2 text-[10px] text-slate-400 leading-relaxed">
+                  Applicazione a scopo esclusivamente formativo e ludico. I contenuti non costituiscono consulenza in materia di investimenti ai sensi del D.Lgs. 58/1998 (TUF) e della Direttiva 2014/65/UE (MiFID II).{' '}
+                  <button onClick={() => setShowFullDisclaimer(true)} className="underline hover:text-slate-600">Leggi tutto</button>
+                </p>
+              )}
+
+              {showFullDisclaimer && (
+                <div className="mt-3 text-[10px] text-slate-400 leading-relaxed space-y-2">
+                  <p><strong className="text-slate-500">Natura del servizio.</strong> Longevity Game è un'applicazione web a finalità esclusivamente formativa e ludica, sviluppata per supportare sessioni di educazione finanziaria. Non costituisce, in nessuna circostanza, prestazione di servizi di investimento ai sensi dell'art. 1, comma 5, del D.Lgs. 24 febbraio 1998, n. 58 (Testo Unico della Finanza) e della Direttiva 2014/65/UE (MiFID II).</p>
+                  <p><strong className="text-slate-500">Non è consulenza finanziaria.</strong> Le allocazioni di portafoglio generate nell'ambito del gioco, i punteggi attribuiti e i feedback dell'intelligenza artificiale non costituiscono raccomandazioni personalizzate di investimento ai sensi dell'art. 1, comma 5-septies, TUF, né sollecitazione all'investimento, offerta al pubblico di strumenti finanziari o qualsiasi altro servizio regolamentato ai sensi della normativa vigente.</p>
+                  <p><strong className="text-slate-500">Prodotti illustrativi.</strong> I prodotti e gli strumenti finanziari eventualmente menzionati sono utilizzati a scopo puramente illustrativo ed educativo. La loro inclusione nel gioco non implica alcuna raccomandazione di acquisto, sottoscrizione o disinvestimento, né alcun riferimento a prodotti reali commercializzati da soggetti specifici.</p>
+                  <p><strong className="text-slate-500">Divieto di utilizzo dei risultati.</strong> I risultati, le allocazioni e i punteggi ottenuti nel corso del gioco non devono essere condivisi, comunicati o utilizzati in alcun modo come consigli di investimento nei confronti di terzi. L'utilizzo dei contenuti del gioco in contesti diversi da quello formativo per cui è stato progettato è espressamente escluso.</p>
+                  <p><strong className="text-slate-500">Rischi degli investimenti.</strong> Qualsiasi investimento in strumenti finanziari comporta rischi, inclusa la perdita parziale o totale del capitale investito. I rendimenti simulati non costituiscono indicazione di risultati futuri e non hanno valore predittivo.</p>
+                  <p><strong className="text-slate-500">Accesso alle sessioni.</strong> L'accesso a sessioni di gioco è riservato ai partecipanti espressamente autorizzati dal facilitatore. L'accesso non autorizzato è contrario alle condizioni d'uso dell'applicazione. I contenuti delle sessioni sono strettamente riservati ai partecipanti autorizzati e non possono essere divulgati a terzi.</p>
+                </div>
+              )}
             </div>
          </main>
       )}
