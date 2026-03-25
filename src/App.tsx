@@ -1521,7 +1521,7 @@ STILE — TASSATIVO:
                         ? localAllocations[prod.id] 
                         : (spiedTeam?.allocations?.[prod.id] || '');
                       
-                      const isDisabled = !isMyTab || isMyTeamLocked || isTeamMember;
+                      const isDisabled = !isMyTab || isMyTeamLocked;
 
                       return (
                         <div key={prod.id} className={`flex items-center p-3 rounded-xl border-2 transition-all ${
@@ -1563,12 +1563,12 @@ STILE — TASSATIVO:
                   </div>
 
                   {isMyTab && (
-                    isTeamMember ? (
+                    isTeamMember && isMyTeamLocked ? (
                       <div className="p-5 bg-[#EBF4FB] border-t border-[#CCD9EA] flex items-center gap-3">
                         <span className="text-2xl">👥</span>
                         <div>
                           <p className="font-black text-[#003063] text-sm">Modalità membro</p>
-                          <p className="text-xs text-slate-500">Solo il capogruppo può modificare e confermare l'allocazione</p>
+                          <p className="text-xs text-slate-500">Il portafoglio è stato consegnato</p>
                         </div>
                       </div>
                     ) : (
