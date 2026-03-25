@@ -108,44 +108,44 @@ const defaultPortfoliosConfig = {
   '0-25': {
     title: 'Fascia 0-25 anni', focus: 'Focus: Tempo e Capitalizzazione',
     products: [
-      { id: 'p1', icon: '🏛️', name: 'Base Previdenziale', desc: 'Fondo pensione complementare', metrics: { settore: 'Multi-Asset Pension', volatilita: 'Media', vantaggioFiscale: 'Deducibilità Genitori' } },
-      { id: 'p2', icon: '🌍', name: 'Esposizione Mercato Puro', desc: 'Piano di accumulo azionario globale', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', stile: 'Growth' } },
-      { id: 'p3', icon: '🛡️', name: 'Liquidità / Conto Corrente', desc: 'Per emergenze e spese correnti', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
-      { id: 'p4', icon: '🏥', name: 'Protezione / Futuro', desc: 'Polizza vita unit linked', metrics: { settore: 'Unit Linked / Assicurativo', volatilita: 'Bassa/Media', focus: 'Successione/LTC' } },
-      { id: 'p5', icon: '🚀', name: 'Motore Azionario Esentasse', desc: 'Piano Individuale di Risparmio (PIR)', metrics: { settore: 'Azionario Italia PMI', volatilita: 'Alta', vantaggioFiscale: 'Esenzione Capital Gain 5 anni' } }
+      { id: 'p1', icon: '🏛️', name: 'Base Previdenziale', desc: 'Fondo pensione', metrics: { settore: 'Multi-Asset Pension', volatilita: 'Media', vantaggioFiscale: 'Deducibilità Genitori' } },
+      { id: 'p2', icon: '🌍', name: 'Esposizione Mercato Puro', desc: 'PAC azionario globale', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', stile: 'Growth' } },
+      { id: 'p3', icon: '🛡️', name: 'Liquidità / Conto Corrente', desc: 'Liquidità corrente', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
+      { id: 'p4', icon: '🏥', name: 'Protezione / Futuro', desc: 'Polizza unit linked', metrics: { settore: 'Unit Linked / Assicurativo', volatilita: 'Bassa/Media', focus: 'Successione/LTC' } },
+      { id: 'p5', icon: '🚀', name: 'Motore Azionario Esentasse', desc: 'PIR (PAC)', metrics: { settore: 'Azionario Italia PMI', volatilita: 'Alta', vantaggioFiscale: 'Esenzione Capital Gain 5 anni' } }
     ]
   },
   '25-50': {
     title: 'Fascia 25-50 anni', focus: 'Focus: Accumulo e Architettura Core-Satellite',
     products: [
-      { id: 'p1', icon: '🏛️', name: 'Base Previdenziale Dinamica', desc: 'Fondo pensione complementare lifecycle', metrics: { settore: 'Multi-Asset LifeCycle', volatilita: 'Alta a scalare', vantaggioFiscale: 'Massima Deducibilità' } },
-      { id: 'p2', icon: '🌍', name: 'Satelliti Azionari Crescita', desc: 'Piano di accumulo azionario globale & emergente', metrics: { settore: 'Azionario Globale & Emergente', volatilita: 'Alta', beta: '1.2' } },
+      { id: 'p1', icon: '🏛️', name: 'Base Previdenziale Dinamica', desc: 'Fondo pensione lifecycle', metrics: { settore: 'Multi-Asset LifeCycle', volatilita: 'Alta a scalare', vantaggioFiscale: 'Massima Deducibilità' } },
+      { id: 'p2', icon: '🌍', name: 'Satelliti Azionari Crescita', desc: 'PAC azionario globale & emergente', metrics: { settore: 'Azionario Globale & Emergente', volatilita: 'Alta', beta: '1.2' } },
       { id: 'p3', icon: '💶', name: 'Liquidità / Conto Corrente', desc: 'Fondo emergenze', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
-      { id: 'p4', icon: '🏥', name: 'Protezione Famiglia', desc: 'Polizza vita unit linked', metrics: { settore: 'Assicurativo Misto', volatilita: 'Media', focus: 'Protezione Capitale' } },
-      { id: 'p5', icon: '⚖️', name: 'Bond Stabilizzatore Core', desc: 'Obbligazioni corporate subordinate globali', metrics: { settore: 'Obbligazionario Subordinato Corporate', volatilita: 'Medio/Bassa', ytm: '4.5%', duration: '3.5 anni', rating: 'BBB' } },
-      { id: 'p6', icon: '🛡️', name: 'Scudo Fiscale', desc: 'Piano Individuale di Risparmio bilanciato (PIR)', metrics: { settore: 'Bilanciato Italia', volatilita: 'Media', vantaggioFiscale: 'Esenzione Tasse' } }
+      { id: 'p4', icon: '🏥', name: 'Protezione Famiglia', desc: 'Polizza unit linked', metrics: { settore: 'Assicurativo Misto', volatilita: 'Media', focus: 'Protezione Capitale' } },
+      { id: 'p5', icon: '⚖️', name: 'Bond Stabilizzatore Core', desc: 'Bond subordinati globali', metrics: { settore: 'Obbligazionario Subordinato Corporate', volatilita: 'Medio/Bassa', ytm: '4.5%', duration: '3.5 anni', rating: 'BBB' } },
+      { id: 'p6', icon: '🛡️', name: 'Scudo Fiscale', desc: 'PIR bilanciato', metrics: { settore: 'Bilanciato Italia', volatilita: 'Media', vantaggioFiscale: 'Esenzione Tasse' } }
     ]
   },
   '50-70': {
     title: 'Fascia 50-70 anni', focus: 'Focus: Transizione Strategica e De-risking',
     products: [
-      { id: 'p1', icon: '🏛️', name: 'Previdenza in De-risking', desc: 'Fondo pensione complementare lifecycle', metrics: { settore: 'Multi-Asset Prudente', volatilita: 'Bassa', focus: 'Consolidamento' } },
-      { id: 'p2', icon: '🌍', name: 'Esposizione Mercato Puro', desc: 'Fondo azionario globale', metrics: { settore: 'Azionario Globale', volatilita: 'Alta' } },
-      { id: 'p3', icon: '🛡️', name: 'Buffer di Liquidità', desc: 'Conto deposito / liquidità immediata', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
-      { id: 'p4', icon: '🏥', name: 'Ottimizzazione Successoria', desc: 'Polizza vita unit linked', metrics: { settore: 'Unit Linked', volatilita: 'Bassa', focus: 'Pianificazione Ereditaria' } },
-      { id: 'p5', icon: '💸', name: 'Azionario per Flussi/Dividendi', desc: 'Fondo azionario dividendi USA', metrics: { settore: 'Azionario Value/Dividend USA', volatilita: 'Media', yield_dividendo: '3.8%' } },
-      { id: 'p6', icon: '🎯', name: 'Bond a Scadenza', desc: 'Fondo obbligazionario a scadenza', metrics: { settore: 'Obbligazionario Target Maturity', volatilita: 'Bassa', ytm: '4.0%', duration: 'Scadenza 2028' } },
-      { id: 'p7', icon: '👵', name: 'Satellite Tematico Longevity', desc: 'Fondo tematico longevity', metrics: { settore: 'Azionario Tematico', volatilita: 'Alta', trend: 'Invecchiamento Popolazione' } }
+      { id: 'p1', icon: '🏛️', name: 'Previdenza in De-risking', desc: 'Fondo pensione lifecycle', metrics: { settore: 'Multi-Asset Prudente', volatilita: 'Bassa', focus: 'Consolidamento' } },
+      { id: 'p2', icon: '🌍', name: 'Esposizione Mercato Puro', desc: 'Azionario globale (PAC)', metrics: { settore: 'Azionario Globale', volatilita: 'Alta' } },
+      { id: 'p3', icon: '🛡️', name: 'Buffer di Liquidità', desc: 'Conto deposito / liquidità', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
+      { id: 'p4', icon: '🏥', name: 'Ottimizzazione Successoria', desc: 'Polizza unit linked', metrics: { settore: 'Unit Linked', volatilita: 'Bassa', focus: 'Pianificazione Ereditaria' } },
+      { id: 'p5', icon: '💸', name: 'Azionario per Flussi/Dividendi', desc: 'Azionario dividendi USA (PAC)', metrics: { settore: 'Azionario Value/Dividend USA', volatilita: 'Media', yield_dividendo: '3.8%' } },
+      { id: 'p6', icon: '🎯', name: 'Bond a Scadenza', desc: 'Obbligazionario a scadenza', metrics: { settore: 'Obbligazionario Target Maturity', volatilita: 'Bassa', ytm: '4.0%', duration: 'Scadenza 2028' } },
+      { id: 'p7', icon: '👵', name: 'Satellite Tematico Longevity', desc: 'Fondo tematico longevity (PAC)', metrics: { settore: 'Azionario Tematico', volatilita: 'Alta', trend: 'Invecchiamento Popolazione' } }
     ]
   },
   '70+': {
     title: 'Fascia Over 70', focus: 'Focus: Ingegneria del Decumulo (Floor & Upside)',
     products: [
-      { id: 'p1', icon: '🏛️', name: 'Rendita e Decumulo', desc: 'Fondo pensione complementare', metrics: { settore: 'Erogazione Rendita', volatilita: 'Bassa', focus: 'Rendita Vitalizia' } },
-      { id: 'p2', icon: '🌍', name: 'Mantenimento Azionario', desc: 'Fondo azionario globale diversificato', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', scopo: 'Upside Lungo Termine' } },
-      { id: 'p3', icon: '🧱', name: 'IL FLOOR (Liquidità 2/5 anni)', desc: 'Obbligazioni breve termine / liquidità', metrics: { settore: 'Obbligazionario Breve Termine', volatilita: 'Molto Bassa', duration: '1.5 anni', scopo: 'Protezione Rischio Sequenza' } },
-      { id: 'p4', icon: '🏥', name: 'Ottimizzazione / Riserva LTC', desc: 'Polizza vita unit linked', metrics: { settore: 'Assicurativo', volatilita: 'Bassa', coperture: 'Long Term Care' } },
-      { id: 'p5', icon: '💵', name: 'CORE INCOME (Flussi Regolari)', desc: 'Fondo multi-asset a cedola globale', metrics: { settore: 'Multi-Asset Income', volatilita: 'Medio/Bassa', target_cedola: '4.5%' } },
+      { id: 'p1', icon: '🏛️', name: 'Rendita e Decumulo', desc: 'Fondo pensione', metrics: { settore: 'Erogazione Rendita', volatilita: 'Bassa', focus: 'Rendita Vitalizia' } },
+      { id: 'p2', icon: '🌍', name: 'Mantenimento Azionario', desc: 'Azionario globale diversificato', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', scopo: 'Upside Lungo Termine' } },
+      { id: 'p3', icon: '🧱', name: 'IL FLOOR (Liquidità 2/5 anni)', desc: 'Bond breve termine / liquidità', metrics: { settore: 'Obbligazionario Breve Termine', volatilita: 'Molto Bassa', duration: '1.5 anni', scopo: 'Protezione Rischio Sequenza' } },
+      { id: 'p4', icon: '🏥', name: 'Ottimizzazione / Riserva LTC', desc: 'Polizza unit linked', metrics: { settore: 'Assicurativo', volatilita: 'Bassa', coperture: 'Long Term Care' } },
+      { id: 'p5', icon: '💵', name: 'CORE INCOME (Flussi Regolari)', desc: 'Multi-asset cedola globale', metrics: { settore: 'Multi-Asset Income', volatilita: 'Medio/Bassa', target_cedola: '4.5%' } },
       { id: 'p6', icon: '🚀', name: 'UPSIDE (Motore Anti-Inflazione)', desc: 'Fondo tematico longevity', metrics: { settore: 'Azionario Tematico', volatilita: 'Alta', scopo: 'Battere Inflazione' } }
     ]
   }
