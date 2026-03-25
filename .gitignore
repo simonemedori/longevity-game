@@ -29,3 +29,6 @@ dist-ssr
 .vercel
 .firebase
 .env*.local
+
+# Amundi-related configs / files
+*Amundi*
