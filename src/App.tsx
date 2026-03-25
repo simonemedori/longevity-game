@@ -658,6 +658,16 @@ const LongevityGame = ({ isSimulator = false }) => {
     }
   };
 
+  const unlockTeamAllocation = async (ageBracket) => {
+    if (!window.confirm(`Sbloccare l'allocazione di ${gameData?.teams?.[ageBracket]?.groupName}? Potranno modificarla e riconsegnarla.`)) return;
+    try {
+      await updateDoc(gameDocRef(gameId), { [`teams.${ageBracket}.status`]: STATUS.DRAFT });
+      showMessage(`Allocazione ${ageBracket} sbloccata.`, 'info');
+    } catch (e) {
+      showMessage("Errore durante lo sblocco.", "error");
+    }
+  };
+
   const kickTeamFromRoom = async (ageBracket) => {
     if(!window.confirm("Sicuro di voler liberare questa fascia d'età? I dati andranno persi.")) return;
     try {
@@ -1988,9 +1998,19 @@ STILE — TASSATIVO:
                              <div className="flex items-center gap-1 bg-white text-[#F07D00] px-3 py-1 rounded-full text-sm font-black border border-[#F9CB99] shadow-sm">
                                 <span>🏆</span> {teamScore} pt
                              </div>
-                             <span className={`px-3 py-1 rounded-full text-xs font-black border ${isSubmitted ? 'bg-[#B1E0E2] text-[#1E6365] border-[#88D0D2]' : 'bg-[#FCE5CC] text-[#C06300] border-[#F9CB99]'}`}>
-                                {isSubmitted ? 'CONSEGNATO' : 'IN BOZZA'}
-                             </span>
+                             {isSubmitted ? (
+                               <button
+                                 onClick={() => unlockTeamAllocation(ageBracket)}
+                                 title="Clicca per sbloccare l'allocazione"
+                                 className="px-3 py-1 rounded-full text-xs font-black border bg-[#B1E0E2] text-[#1E6365] border-[#88D0D2] hover:bg-[#FCE5CC] hover:text-[#C06300] hover:border-[#F9CB99] transition-colors cursor-pointer"
+                               >
+                                 CONSEGNATO
+                               </button>
+                             ) : (
+                               <span className="px-3 py-1 rounded-full text-xs font-black border bg-[#FCE5CC] text-[#C06300] border-[#F9CB99]">
+                                 IN BOZZA
+                               </span>
+                             )}
                              <button 
                                 onClick={() => openAdminEditModal(ageBracket)}
                                 title="Modifica manualmente questa squadra"
