@@ -1,6 +1,6 @@
 # 🎮 Longevity Game — Simulatore Finanziario IA
 
-**Longevity Game** è un'applicazione web multiplayer per la formazione di consulenti finanziari. I partecipanti, divisi in squadre per fascia d'età, allocano portafogli di investimento e affrontano imprevisti macroeconomici generati in tempo reale da un Game Master basato su intelligenza artificiale.
+**Longevity Game** è un'applicazione web multiplayer per riflettere sulle proprie scelte di investimento in base alla fascia d'età. I partecipanti, divisi in squadre per fascia d'età, allocano portafogli di investimento e affrontano imprevisti macroeconomici generati in tempo reale da un Game Master basato su intelligenza artificiale.
 
 ---
 
@@ -194,7 +194,7 @@ Il cuore del gioco. L'IA genera imprevisti macroeconomici realistici, valuta i p
 | Layer | Tecnologia |
 |---|---|
 | Frontend | React 19, TypeScript, Vite |
-| Styling | Tailwind CSS (CDN), palette brand Amundi |
+| Styling | Tailwind CSS (CDN) |
 | Database | Firebase Firestore (real-time sync) |
 | Autenticazione | Firebase Auth (anonima + Google OAuth) |
 | Intelligenza Artificiale | Google Gemini 2.5 Flash |
