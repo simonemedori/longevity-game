@@ -799,28 +799,28 @@ STILE — TASSATIVO:
       }
     };
 
-    const fetchWithRetry = async (retries = 5, delay = 1000) => {
-      // Usiamo la Netlify Function come scudo per la sicurezza
+    const fetchWithRetry = async (retries = 3, delay = 2000) => {
       const functionUrl = import.meta.env.VITE_AI_FUNCTION_URL || '/.netlify/functions/generate-event';
-      
+
       for (let i = 0; i < retries; i++) {
-        try {
-          const res = await fetch(functionUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          
-          if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
-          }
-          return await res.json();
-        } catch (e) {
-          if (i === retries - 1) throw e;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2;
+        const res = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.status === 429) {
+          if (i === retries - 1) throw new Error('Il servizio AI è temporaneamente sovraccarico. Attendi qualche secondo e riprova.');
+          await new Promise(resolve => setTimeout(resolve, 15000)); // 15s per rate limit
+          continue;
         }
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Errore server: ${res.status}`);
+        }
+
+        return await res.json();
       }
     };
 
@@ -852,7 +852,8 @@ STILE — TASSATIVO:
       }
     } catch (error) {
       console.error("Errore Gemini:", error);
-      showMessage("Errore durante la generazione dell'imprevisto. Riprova tra qualche istante.", "error");
+      const msg = error instanceof Error ? error.message : "Errore durante la generazione dell'imprevisto.";
+      showMessage(msg, "error");
     } finally {
       setIsGeneratingAI(false);
     }
