@@ -799,33 +799,23 @@ STILE — TASSATIVO:
       }
     };
 
-    const fetchWithRetry = async (retries = 3, delay = 2000) => {
+    const callAI = async () => {
       const functionUrl = import.meta.env.VITE_AI_FUNCTION_URL || '/.netlify/functions/generate-event';
-
-      for (let i = 0; i < retries; i++) {
-        const res = await fetch(functionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.status === 429) {
-          if (i === retries - 1) throw new Error('Il servizio AI è temporaneamente sovraccarico. Attendi qualche secondo e riprova.');
-          await new Promise(resolve => setTimeout(resolve, 15000)); // 15s per rate limit
-          continue;
-        }
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || `Errore server: ${res.status}`);
-        }
-
-        return await res.json();
+      const res = await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.status === 429) throw new Error('Servizio AI momentaneamente sovraccarico. Riprova tra qualche secondo.');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Errore server: ${res.status}`);
       }
+      return await res.json();
     };
 
     try {
-      const result = await fetchWithRetry();
+      const result = await callAI();
       const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (textResponse) {
