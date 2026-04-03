@@ -815,7 +815,7 @@ STILE — TASSATIVO:
       if (res.status === 429) throw new Error('Servizio AI momentaneamente sovraccarico. Riprova tra qualche secondo.');
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `Errore server: ${res.status}`);
+        throw new Error(errorData.error?.message || errorData.message || `Errore server: ${res.status}`);
       }
       return await res.json();
     };
