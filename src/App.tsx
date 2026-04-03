@@ -111,7 +111,7 @@ const defaultPortfoliosConfig = {
       { id: 'p1', icon: '🏛️', name: 'Base Previdenziale', desc: 'Fondo pensione', metrics: { settore: 'Multi-Asset Pension', volatilita: 'Media', vantaggioFiscale: 'Deducibilità Genitori' } },
       { id: 'p2', icon: '🌍', name: 'Esposizione Mercato Puro', desc: 'PAC azionario globale', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', stile: 'Growth' } },
       { id: 'p3', icon: '🛡️', name: 'Liquidità / Conto Corrente', desc: 'Liquidità corrente', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
-      { id: 'p4', icon: '🏥', name: 'Protezione / Futuro', desc: 'Polizza unit linked', metrics: { settore: 'Unit Linked / Assicurativo', volatilita: 'Bassa/Media', focus: 'Successione/LTC' } },
+      { id: 'p4', icon: '🏥', name: 'Protezione / Futuro', desc: 'Polizza unit linked', metrics: { settore: 'Unit Linked / Assicurativo', volatilita: 'Bassa/Media', focus: 'Accumulo' } },
       { id: 'p5', icon: '🚀', name: 'Motore Azionario Esentasse', desc: 'PIR (PAC)', metrics: { settore: 'Azionario Italia PMI', volatilita: 'Alta', vantaggioFiscale: 'Esenzione Capital Gain 5 anni' } }
     ]
   },
@@ -133,7 +133,7 @@ const defaultPortfoliosConfig = {
       { id: 'p2', icon: '🌍', name: 'Esposizione Mercato Puro', desc: 'Azionario globale (PAC)', metrics: { settore: 'Azionario Globale', volatilita: 'Alta' } },
       { id: 'p3', icon: '🛡️', name: 'Buffer di Liquidità', desc: 'Conto deposito / liquidità', metrics: { settore: 'Monetario', volatilita: 'Nulla', ytm: '0%' } },
       { id: 'p4', icon: '🏥', name: 'Ottimizzazione Successoria', desc: 'Polizza unit linked', metrics: { settore: 'Unit Linked', volatilita: 'Bassa', focus: 'Pianificazione Ereditaria' } },
-      { id: 'p5', icon: '💸', name: 'Azionario per Flussi/Dividendi', desc: 'Azionario dividendi USA (PAC)', metrics: { settore: 'Azionario Value/Dividend USA', volatilita: 'Media', yield_dividendo: '3.8%' } },
+      { id: 'p5', icon: '💸', name: 'Azionario per Flussi/Dividendi', desc: 'Azionario dividendi Globale (PAC)', metrics: { settore: 'Azionario Value/Dividend Global', volatilita: 'Media', yield_dividendo: '3.8%' } },
       { id: 'p6', icon: '🎯', name: 'Bond a Scadenza', desc: 'Obbligazionario a scadenza', metrics: { settore: 'Obbligazionario Target Maturity', volatilita: 'Bassa', ytm: '4.0%', duration: 'Scadenza 2028' } },
       { id: 'p7', icon: '👵', name: 'Satellite Tematico Longevity', desc: 'Fondo tematico longevity (PAC)', metrics: { settore: 'Azionario Tematico', volatilita: 'Alta', trend: 'Invecchiamento Popolazione' } }
     ]
@@ -752,10 +752,16 @@ La tua identità: Chief Investment Strategist con 25 anni sui mercati globali.
 Leggi ogni evento — economico o di vita — attraverso la lente dell'impatto finanziario sul portafoglio del cliente.
 Tono: autorevole, teatrale, ironico. Premi le scelte tecnicamente solide, demolisci quelle ingenue. Una frecciata ben piazzata vale più di un paragrafo.
 
-EVENTI: scegli liberamente tra macroeconomici (tassi, inflazione, recessione, rally, spread, geopolitica) e di vita (eventi familiari, lavorativi, sanitari, successori) — sia positivi che negativi in egual misura.
+EVENTI: l'evento può essere di qualsiasi natura — macroeconomica (a titolo esemplificativo: geopolitica, inflazione, recessione, spread creditizi, rally, tassi, valute) o di vita personale (a titolo esemplificativo: eventi familiari, lavorativi, sanitari, successori) — sia positivi che negativi in egual misura. La scelta è completamente libera e non vincolata dall'ordine degli esempi.
 Gli eventi macroeconomici si applicano identici a tutti i team.
 Gli eventi di vita personale, se pertinenti, possono essere adattati alla fascia d'età (es. "nascita figlio" per 25-50, "nascita nipote" per 70+).
 In ogni caso, valuta sempre l'impatto finanziario sul portafoglio del cliente.
+
+PAC (Piano di Accumulo del Capitale): quando l'evento è un calo dei mercati azionari, i prodotti con metodologia PAC non vanno penalizzati come l'azionario puro. Il PAC si nutre della volatilità: acquistare quote a prezzi più bassi abbassa il prezzo medio di carico e migliora i rendimenti futuri. Modula il giudizio in base all'orizzonte temporale della fascia:
+- 0-25 anni: massimo beneficio. Orizzonte lunghissimo, ogni calo è un'opportunità di accumulo straordinaria. Tono quasi entusiasta.
+- 25-50 anni: forte beneficio. Il dollar-cost averaging lavora a pieno regime. Tono rassicurante.
+- 50-70 anni: beneficio moderato. La fase di accumulo residua è più breve, ma il PAC attenua comunque lo shock. Tono neutro, senza allarmismi.
+- 70+ anni: beneficio limitato. L'orizzonte è più breve e la tolleranza alla volatilità ridotta, ma il PAC resta meno penalizzante dell'azionario puro. Tono cauto ma non catastrofico.
 
 VALUTAZIONE: usa le metriche tecniche fornite per ciascun prodotto (disponibili nel JSON) per giustificare ogni voto con precisione chirurgica.
 Premia chi era posizionato per cogliere l'opportunità o assorbire lo shock. Punteggio da 1 a 10.
