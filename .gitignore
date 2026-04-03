@@ -32,3 +32,6 @@ dist-ssr
 
 # Amundi-related configs / files
 *Amundi*
+
+# Deno
+deno.lock
