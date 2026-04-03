@@ -50,7 +50,7 @@ exports.generateEvent = onRequest(
       return res.status(500).json({ error: 'GEMINI_API_KEY non configurata' });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     return new Promise((resolve) => {
       const reqGoogle = https.request(url, {
