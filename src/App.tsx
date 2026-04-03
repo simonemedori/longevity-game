@@ -142,7 +142,7 @@ const defaultPortfoliosConfig = {
     title: 'Fascia Over 70', focus: 'Focus: Ingegneria del Decumulo (Floor & Upside)',
     products: [
       { id: 'p1', icon: '🏛️', name: 'Rendita e Decumulo', desc: 'Fondo pensione', metrics: { settore: 'Erogazione Rendita', volatilita: 'Bassa', focus: 'Rendita Vitalizia' } },
-      { id: 'p2', icon: '🌍', name: 'Mantenimento Azionario', desc: 'Azionario globale diversificato', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', scopo: 'Upside Lungo Termine' } },
+      { id: 'p2', icon: '🌍', name: 'Mantenimento Azionario', desc: 'Azionario globale diversificato (PAC)', metrics: { settore: 'Azionario Globale', volatilita: 'Alta', scopo: 'Upside Lungo Termine' } },
       { id: 'p3', icon: '🧱', name: 'IL FLOOR (Liquidità 2/5 anni)', desc: 'Bond breve termine / liquidità', metrics: { settore: 'Obbligazionario Breve Termine', volatilita: 'Molto Bassa', duration: '1.5 anni', scopo: 'Protezione Rischio Sequenza' } },
       { id: 'p4', icon: '🏥', name: 'Ottimizzazione / Riserva LTC', desc: 'Polizza unit linked', metrics: { settore: 'Assicurativo', volatilita: 'Bassa', coperture: 'Long Term Care' } },
       { id: 'p5', icon: '💵', name: 'CORE INCOME (Flussi Regolari)', desc: 'Multi-asset cedola globale', metrics: { settore: 'Multi-Asset Income', volatilita: 'Medio/Bassa', target_cedola: '4.5%' } },
